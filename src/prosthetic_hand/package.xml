@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>prostetic_hand</name>
+  <name>prosthetic_hand</name>
   <version>0.0.1</version>
   <description>Prostetic hand semi-autonumous controller</description>
 
