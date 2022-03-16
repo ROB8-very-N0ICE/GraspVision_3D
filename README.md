@@ -7,6 +7,8 @@ Install the dependencies
 git clone https://github.com/ROB8-very-N0ICE/P8_project.git
 cd P8_project/src
 git clone https://github.com/IntelRealSense/realsense-ros.git
+git clone https://github.com/ros/dynamic_reconfigure.git
+git clone https://github.com/pal-robotics/ddynamic_reconfigure.git
 ```
 
 Launch camera
