@@ -15,6 +15,9 @@ git clone https://github.com/pal-robotics/ddynamic_reconfigure.git
 ```
 Install segmentation CNN (Yolact)
 ```
+git clone https://github.com/dbolya/yolact.git
+git clone https://github.com/Eruvae/yolact_ros_msgs
+git clone https://github.com/Eruvae/yolact_ros.git
 ```
 
 ## Usage
