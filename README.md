@@ -17,7 +17,7 @@ Install segmentation CNN (Yolact)
 ```
 ```
 
-##Usage
+## Usage
 Launch camera
 ```
 roslaunch prosthetic_hand camera.launch
