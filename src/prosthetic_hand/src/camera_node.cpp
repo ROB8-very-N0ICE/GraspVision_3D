@@ -65,14 +65,12 @@ void pointCloudCallback(const sensor_msgs::ImageConstPtr& msg){
     }
 }
 
-void detectionsCallback(const yolact_ros_msgs::Detections &mask){
+void detectionsCallback(const yolact_ros_msgs::Detections &detections){
 
-    //std::string name = mask->class_name;
-    //size_t index = y * mask.width + x;
-    //size_t byte_ind = index / 8;
-    //size_t bit_ind = 7 - (index % 8); // bitorder 'big'
-    ROS_INFO("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-    //return mask.mask[byte_ind] & (1 << bit_ind);
+    yolact_ros_msgs::Detection_<std::allocator<void> > foo = detections.detections[0];//.class_name;
+    std::string name = foo.class_name;
+    std::cout << name << std::endl;
+    //ROS_INFO("Msg: " << &name);
 }
 
 int main(int argc, char **argv)
