@@ -1,4 +1,7 @@
 src/realsense-ros
+src/vision_opencv
+src/yolact_ros
+src/yolact_ros_msgs
 devel
 build
 .idea

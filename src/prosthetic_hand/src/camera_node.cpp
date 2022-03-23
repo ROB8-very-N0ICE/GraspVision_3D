@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
     cv::startWindowThread();
     image_transport::ImageTransport it(nh);
-    image_transport::Subscriber subI = it.subscribe("/camera/color/image_raw", 1, rgbCallback);
+    //image_transport::Subscriber subI = it.subscribe("/camera/color/image_raw", 1, rgbCallback);
     image_transport::Subscriber subD = it.subscribe("/camera/aligned_depth_to_color/image_raw", 1, pointCloudCallback);
 
     ros::spin();
