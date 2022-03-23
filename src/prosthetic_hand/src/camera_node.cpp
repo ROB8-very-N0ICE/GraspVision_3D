@@ -5,7 +5,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <librealsense2/rs.hpp>
-
+#include <yolact_ros_msgs/Detections.h>
 
 void rgbCallback(const sensor_msgs::ImageConstPtr& msg){
     try{
@@ -50,7 +50,7 @@ void pointCloudCallback(const sensor_msgs::ImageConstPtr& msg){
         int h = depth.rows;
         int offset = 30;
         int point = depth.at<int>((w+offset)/2, (h+offset)/2);
-        ROS_INFO("distance: %f", point);    //TODO: must calculate unities
+        ROS_INFO("distance: %d", point);    //TODO: must calculate unities
 
         /*//calculate the distance
         cv::Point pt1(w, h);
@@ -65,14 +65,24 @@ void pointCloudCallback(const sensor_msgs::ImageConstPtr& msg){
     }
 }
 
+void detectionsCallback(const yolact_ros_msgs::Detections &mask){
+
+    //std::string name = mask->class_name;
+    //size_t index = y * mask.width + x;
+    //size_t byte_ind = index / 8;
+    //size_t bit_ind = 7 - (index % 8); // bitorder 'big'
+    ROS_INFO("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+    //return mask.mask[byte_ind] & (1 << bit_ind);
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "camera_node");
     ros::NodeHandle nh;
     cv::startWindowThread();
-    image_transport::ImageTransport it(nh);
-    //image_transport::Subscriber subI = it.subscribe("/camera/color/image_raw", 1, rgbCallback);
-    image_transport::Subscriber subD = it.subscribe("/camera/aligned_depth_to_color/image_raw", 1, pointCloudCallback);
+    //image_transport::ImageTransport it(nh);
+    //image_transport::Subscriber subD = it.subscribe("/camera/aligned_depth_to_color/image_raw", 1, pointCloudCallback);
+    ros::Subscriber subDet = nh.subscribe("/yolact_ros/detections", 1, detectionsCallback);
 
     ros::spin();
     cv::destroyWindow("view");

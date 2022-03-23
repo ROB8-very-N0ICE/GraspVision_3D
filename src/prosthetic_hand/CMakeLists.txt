@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   roscpp
   rospy
+  yolact_ros_msgs
   #object_msgs
 )
 
@@ -109,7 +110,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES camera3d
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+   CATKIN_DEPENDS yolact_ros_msgs roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
