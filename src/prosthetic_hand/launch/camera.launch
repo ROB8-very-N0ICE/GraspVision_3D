@@ -29,10 +29,10 @@ This initialize the camera
     <arg name="color_height"        default="480"/>
     <arg name="enable_color"        default="true"/>
 
-    <arg name="fisheye_fps"         default="5"/>
-    <arg name="depth_fps"           default="5"/>
-    <arg name="infra_fps"           default="5"/>
-    <arg name="color_fps"           default="5"/>
+    <arg name="fisheye_fps"         default="30"/>
+    <arg name="depth_fps"           default="30"/>
+    <arg name="infra_fps"           default="30"/>
+    <arg name="color_fps"           default="30"/>
     <arg name="gyro_fps"            default="400"/>
     <arg name="accel_fps"           default="250"/>
     <arg name="enable_gyro"         default="true"/>
@@ -98,6 +98,7 @@ This initialize the camera
 
 
   <node pkg="prosthetic_hand" type="camera_node" name="camera_node" output="screen" />
+
 
   <!--
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find prosthetic_hand)/rviz/config_file.rviz" />
