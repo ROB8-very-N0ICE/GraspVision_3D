@@ -56,25 +56,32 @@ void detectionsCallback(const yolact_ros_msgs::Detections &detec){
         m1 = cv::Mat::zeros(height, width, CV_8UC1);
 
         std::vector<uint32_t> box = {//100, 100, 200, 200};
-
           detec.detections[i].box.x1,
           detec.detections[i].box.y1,
           detec.detections[i].box.x2,
           detec.detections[i].box.y2
         };
-        
+
 
         std::vector<int> size = {
           detec.detections[i].mask.width,
           detec.detections[i].mask.height
         };
 
-        //uint8_t number = detec.detections[i].mask.mask[1];
-        //std::cout << (int) number << std::endl;
+        uint8_t number = detec.detections[i].mask.mask[1];
         for (int j = box[0]; j < box[2]; j++){
           for (int k = box[1]; k < box[3]; k++){
-            m1.at<uint8_t>(k, j) = 255;
-            //ROS_INFO("3: %d", 3333333333333);
+            size_t index = k * size[0] + j;
+            size_t byte_ind = index / 8;
+            size_t bit_ind = 7 - (index % 8); // bitorder 'big'
+            //mask.mask[byte_ind] & (1 << bit_ind);
+            uint8_t val = detec.detections[i].mask.mask[byte_ind] & (1 << bit_ind);
+
+
+
+            m1.at<uint8_t>(k, j) = ((bool)val) * 255;
+            //  m1.at<uint8_t>(k, j) = detec.detections[i].mask.mask[1];//255;
+            //ROS_INFO("3: %d", val);
             };
           };
         };
