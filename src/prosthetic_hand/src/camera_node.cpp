@@ -48,53 +48,38 @@ void pointCloudCallback(const sensor_msgs::ImageConstPtr& msg){
 }
 
 void detectionsCallback(const yolact_ros_msgs::Detections &detec){
-    //yolact_ros_msgs::Detection_<std::allocator<void> > foo = detec.detections[20];
-    //std::cout << name << std::endl;
-    //ROS_INFO("Msg: " << &name);
-    //if (rgb_img != NULL) {
     for(int i=0; i<5; i++){ // only 5 detections per message for some reason
       std::string class_name = detec.detections[i].class_name;
       float score = detec.detections[i].score; // char64_t its float 64, it may cahnge in a diff machine must controll it later
-      std::vector<int_least32_t> box = {
-        detec.detections[i].box.x1,
-        detec.detections[i].box.y1,
-        detec.detections[i].box.x2,
-        detec.detections[i].box.y2
-      };
 
-
-      std::vector<int> size = {
-        detec.detections[i].mask.width,
-        detec.detections[i].mask.height
-      };
-
-      //np.zeros([height, width, 3], dtype=np.uint8)
-      //std::cout << (size[0] <= width) << " " << (size[1] <= height) << std::endl;
-
-      if (class_name == "person") {
+      if ((class_name == "person") && (score > .5)) {  // discar uncertainty below .5
         m1 = cv::Mat::zeros(height, width, CV_8UC1);
-        for (size_t i = box[0]; i < box[2]-1; i++) {
-          for (size_t j = box[1]; j < box[3]-1; j++) {
-            m1.data[(j*width) + i] = 250;
 
-            //rgb_img.data[rgb_img.step[0]*i + rgb_img.step[1]* j + 0] = 0;
-            //rgb_img.data[rgb_img.step[0]*i + rgb_img.step[1]* j + 1] = 0;
-            //rgb_img.data[rgb_img.step[0]*i + rgb_img.step[1]* j + 2] = 0;
+        std::vector<uint32_t> box = {//100, 100, 200, 200};
+
+          detec.detections[i].box.x1,
+          detec.detections[i].box.y1,
+          detec.detections[i].box.x2,
+          detec.detections[i].box.y2
+        };
+        
+
+        std::vector<int> size = {
+          detec.detections[i].mask.width,
+          detec.detections[i].mask.height
+        };
+
+        //uint8_t number = detec.detections[i].mask.mask[1];
+        //std::cout << (int) number << std::endl;
+        for (int j = box[0]; j < box[2]; j++){
+          for (int k = box[1]; k < box[3]; k++){
+            m1.at<uint8_t>(k, j) = 255;
+            //ROS_INFO("3: %d", 3333333333333);
+            };
           };
         };
-        //m1.data[200] = 254;
-        //std::cout << width << " " << height << '\n';
-        cv::imshow("mask", m1);
-        //cv::waitKey(30);
       };
-
-      //std::cout << box[0] << " " << box[1] << " " << box[2] << " " << box[3] << " " << size[0] <<" "<< size[1] << " "<<  class_name <<std::endl;
-      //if (rgb_img.data[10]) {
-        //std::cout << rgb_img.data[10] << '\n';
-        //cv::imshow("mask", rgb_img);
-        //cv::waitKey(30);
-      //}
-    };
+    cv::imshow("mask", m1);
     //TODO: overlap masks to point cloud
     //TODO: remove further points
 }
