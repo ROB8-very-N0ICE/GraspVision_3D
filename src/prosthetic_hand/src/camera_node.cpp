@@ -9,25 +9,30 @@
 
 
 cv::Mat rgb_img;
-int width = 640;    // hardcodding... to make it faster
-int height = 480;
-
-cv::Mat m1 = cv::Mat::zeros(height, width, CV_8UC1); // test masks
+int width = 10;    // hardcodding... to make it faster
+int height = 10;
+cv::Mat mask_img = cv::Mat::zeros(height, width, CV_8UC1); // test masks
+cv::Mat depth = cv::Mat::zeros(height, width, CV_16UC1);
 
 void pointCloudCallback(const sensor_msgs::ImageConstPtr& msg){
     try{
-        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+        //cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC3);
         cv::Mat depth = cv_ptr->image;
-        cv::Mat depth_show = cv_ptr->image;
+        height = depth.rows;
+        width = depth.cols;
+        //ROS_INFO("%d\t%d", wi);
+        // cv::Mat depth_show = cv_ptr->image;
         // rgb      cols= 640   rows = 480
         // depth    cols= 848   rows = 480
 
-
+/*
         for(int i= 0 ; i < depth.rows-1; i++){
             for (int j = 0; j < depth.cols-1; ++j) {
                 depth_show.at<int>(i, j) = depth.at<int>(i, j) / pow(10, 5) * 65535;
             }
         }
+        */
         //width = depth.cols;
         //height = depth.rows;
         //int offset = 30;
@@ -52,8 +57,12 @@ void detectionsCallback(const yolact_ros_msgs::Detections &detec){
       std::string class_name = detec.detections[i].class_name;
       float score = detec.detections[i].score; // char64_t its float 64, it may cahnge in a diff machine must controll it later
 
-      if ((class_name == "person") && (score > .5)) {  // discar uncertainty below .5
-        m1 = cv::Mat::zeros(height, width, CV_8UC1);
+      if ((class_name == "person") && (score > .5) && width && height) {  // discar uncertainty below .8
+        size_t index;
+        size_t byte_ind;
+        size_t bit_ind;
+        size_t val;
+        mask_img = cv::Mat::zeros(height, width, CV_8UC1);
 
         std::vector<uint32_t> box = {//100, 100, 200, 200};
           detec.detections[i].box.x1,
@@ -68,25 +77,21 @@ void detectionsCallback(const yolact_ros_msgs::Detections &detec){
           detec.detections[i].mask.height
         };
 
-        uint8_t number = detec.detections[i].mask.mask[1];
         for (int j = box[0]; j < box[2]; j++){
           for (int k = box[1]; k < box[3]; k++){
-            size_t index = k * size[0] + j;
-            size_t byte_ind = index / 8;
-            size_t bit_ind = 7 - (index % 8); // bitorder 'big'
-            //mask.mask[byte_ind] & (1 << bit_ind);
-            uint8_t val = detec.detections[i].mask.mask[byte_ind] & (1 << bit_ind);
-
-
-
-            m1.at<uint8_t>(k, j) = ((bool)val) * 255;
-            //  m1.at<uint8_t>(k, j) = detec.detections[i].mask.mask[1];//255;
-            //ROS_INFO("3: %d", val);
+            index = (k - box[1]) * size[0] + j - box[0];
+            byte_ind = index / 8;
+            bit_ind = 7 - (index % 8); // bitorder 'big'
+            val = detec.detections[i].mask.mask[byte_ind] & (1 << bit_ind);
+            mask_img.at<uint8_t>(k, j) = ((bool)val) * 255;
+            //clean_depth.at<uint16_t>(k, j) = depth.at<uint16_t>(i, j) * ((bool)val)//operate the depth data in the same loop is faster
+            //
+            //ROS_INFO("%d, %d", j, k);
             };
           };
         };
       };
-    cv::imshow("mask", m1);
+    cv::imshow("mask", mask_img);
     //TODO: overlap masks to point cloud
     //TODO: remove further points
 }
@@ -97,7 +102,7 @@ int main(int argc, char **argv){
     ros::NodeHandle nh;
     cv::startWindowThread();
     image_transport::ImageTransport it(nh);
-    image_transport::Subscriber subD = it.subscribe("/camera/aligned_depth_to_color/image_raw", 1, pointCloudCallback);
+    image_transport::Subscriber subD = it.subscribe("/usb_cam/image_raw", 1, pointCloudCallback); ///camera/aligned_depth_to_color/image_raw", 1, pointCloudCallback);
     ros::Subscriber subDet = nh.subscribe("/yolact_ros/detections", 1, detectionsCallback);
     ros::spin();
     cv::destroyWindow("view");
