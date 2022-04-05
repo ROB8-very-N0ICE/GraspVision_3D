@@ -1,0 +1,6 @@
+<!--
+this launcher was made to run specific nodes that do not require the full system
+-->
+<launch>
+  <node pkg="prosthetic_hand" type="state_machine.py" name="state_machine" output="screen"/>
+</launch>
