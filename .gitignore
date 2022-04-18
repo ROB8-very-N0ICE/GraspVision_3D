@@ -3,6 +3,7 @@ src/vision_opencv
 src/yolact_ros
 src/yolact_ros_msgs
 src/usb_cam
+src/ddynamic_reconfigure
 devel
 build
 .idea
