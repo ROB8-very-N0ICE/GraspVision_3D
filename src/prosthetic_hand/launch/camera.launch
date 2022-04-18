@@ -103,8 +103,8 @@ This initialize the camera
 run our nodes
 -->
 
-  <node pkg="prosthetic_hand" type="camera_node" name="camera_node" output="screen" />
   <node pkg="prosthetic_hand" type="state_machine.py" name="state_machine" output="screen"/>
+  <node pkg="prosthetic_hand" type="camera_node" name="camera_node"/>
 
 
 

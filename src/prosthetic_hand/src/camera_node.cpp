@@ -6,6 +6,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <librealsense2/rs.hpp>
 #include <yolact_ros_msgs/Detections.h>
+#include <std_msgs/UInt8.h>
 
 
 cv::Mat rgb_img;
@@ -15,6 +16,7 @@ cv::Mat mask_img = cv::Mat::zeros(height, width, CV_8UC1); // test masks
 cv::Mat depth = cv::Mat::zeros(height, width, CV_16UC1);
 image_transport::Publisher people_pub;
 image_transport::Publisher unknown_object_pub;
+ros::Publisher feedback_pub;
 
 void pointCloudCallback(const sensor_msgs::ImageConstPtr &msg) {
     try {
@@ -109,6 +111,7 @@ sensor_msgs::ImagePtr handle_unknown_object(const yolact_ros_msgs::Detection &de
         }
     }
     //cv::imshow("unknown object", mask_img);
+    //feedback_pub.publish(1);  // 1 is the next logical state for the state_machine
     return cv_bridge::CvImage(std_msgs::Header(), "mono16", clean_depth).toImageMsg();
 }
 
@@ -134,8 +137,9 @@ int main(int argc, char **argv) {
     cv::startWindowThread();
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber subD = it.subscribe("camera/aligned_depth_to_color/image_raw", 1, pointCloudCallback);
-    people_pub = it.advertise("people_depth", 1);
+    //people_pub = it.advertise("people_depth", 1);
     unknown_object_pub = it.advertise("unknown_depth", 1);
+    feedback_pub = nh.advertise<std_msgs::UInt8>("state_feedback", 1);
     //usb_cam/image_raw", 1, pointCloudCallback);
     ros::Subscriber subDet = nh.subscribe("/yolact_ros/detections", 1, detectionsCallback);
     ros::spin();
