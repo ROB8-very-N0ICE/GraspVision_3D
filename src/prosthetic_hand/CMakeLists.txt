@@ -144,6 +144,14 @@ target_link_libraries(camera_node
         ${OpenCV_LIBS}
         )
 
+
+
+add_executable(ransac_node src/ransac_node.cpp)
+target_link_libraries(ransac_node
+        ${catkin_LIBRARIES}
+#       ${OpenCV_LIBS}
+        )
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use

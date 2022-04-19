@@ -12,11 +12,13 @@
 cv::Mat rgb_img;
 int width = 10;    // hardcodding... to make it faster
 int height = 10;
+//std_msgs::UInt8 machine_state;
+//machine_state.data = (uint8_t) 0;
 cv::Mat mask_img = cv::Mat::zeros(height, width, CV_8UC1); // test masks
 cv::Mat depth = cv::Mat::zeros(height, width, CV_16UC1);
 image_transport::Publisher people_pub;
 image_transport::Publisher unknown_object_pub;
-ros::Publisher feedback_pub;
+//ros::Publisher feedback_pub;
 
 void pointCloudCallback(const sensor_msgs::ImageConstPtr &msg) {
     try {
@@ -128,7 +130,10 @@ void detectionsCallback(const yolact_ros_msgs::Detections &detec) {
     //TODO: remove further points
         }
     }
-
+void state_update(const std_msgs::UInt8 &state){
+  //machine_state = state;
+  ROS_INFO("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+}
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "camera_node");
@@ -139,9 +144,10 @@ int main(int argc, char **argv) {
     image_transport::Subscriber subD = it.subscribe("camera/aligned_depth_to_color/image_raw", 1, pointCloudCallback);
     //people_pub = it.advertise("people_depth", 1);
     unknown_object_pub = it.advertise("unknown_depth", 1);
-    feedback_pub = nh.advertise<std_msgs::UInt8>("state_feedback", 1);
+    //feedback_pub = nh.advertise<std_msgs::UInt8>("state_feedback", 1);
     //usb_cam/image_raw", 1, pointCloudCallback);
     ros::Subscriber subDet = nh.subscribe("/yolact_ros/detections", 1, detectionsCallback);
+    //ros::Subscriber state_sub = nh.subscribe("/state_feedforward", 1, state_update);
     ros::spin();
     cv::destroyWindow("view");
 }
