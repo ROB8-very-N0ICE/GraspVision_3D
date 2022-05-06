@@ -124,15 +124,13 @@ void detectionsCallback(const yolact_ros_msgs::Detections &detec) {
         if ((class_name == "person") && (score > .5)) {
             //people_pub.publish(handle_detections(detec.detections[i]));
             unknown_object_pub.publish(handle_unknown_object(detec.detections[i])); // this assumes only one person detection
+            //ROS_INFO("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
         }
-
-    //TODO: overlap masks to point cloud
     //TODO: remove further points
         }
     }
 void state_update(const std_msgs::UInt8 &state){
   //machine_state = state;
-  ROS_INFO("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
 }
 
 int main(int argc, char **argv) {
