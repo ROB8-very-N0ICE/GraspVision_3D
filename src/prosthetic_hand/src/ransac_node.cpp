@@ -32,6 +32,8 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/time.h>
 #include <pcl/sample_consensus/ransac.h>
+#include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.h>
 
 #include <iostream>
 #include <thread>
@@ -136,11 +138,18 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 
 
 ////////////////////////////////Here we subscribe to the depth data
-void callback(const PointCloud::ConstPtr& msg)
-{
-  printf ("Cloud: width = %d, height = %d\n", msg->width, msg->height);
-  BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points)
-    printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
+void depth_handler(const sensor_msgs::ImageConstPtr &msg){
+  try {
+      cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+      //cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC3);
+      cv::Mat depth = cv_ptr->image;
+      int height = depth.rows;
+      int width = depth.cols;
+      printf ("Cloud: width = %d, height = %d\n", width, height);
+      }
+  catch (cv_bridge::Exception &e){
+      ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
+  }
 }
 /////////////////////////////////////////////////////////////
 
@@ -796,7 +805,7 @@ int main(int argc, char** argv){
   //unique_ptr<MyListener> listener;
   ros::init(argc, argv, "ransac_node");
   ros::NodeHandle nh;
-  ros::Subscriber sub = nh.subscribe<PointCloud>("points2", 1, callback);
+  image_transport::ImageTransport it(nh);
+  image_transport::Subscriber sub = it.subscribe("unknown_depth", 1, depth_handler);
   ros::spin();
-
 }
