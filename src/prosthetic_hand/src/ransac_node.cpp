@@ -795,7 +795,6 @@ private:
 int main(int argc, char** argv){
   //unique_ptr<MyListener> listener;
   ros::init(argc, argv, "ransac_node");
-  ros::Rate r(5);
   ros::NodeHandle nh;
   ros::Subscriber sub = nh.subscribe<PointCloud>("points2", 1, callback);
   ros::spin();
