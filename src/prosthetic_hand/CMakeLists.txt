@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   yolact_ros_msgs
   #object_msgs
+  pcl_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -123,6 +124,7 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -163,9 +165,9 @@ target_link_libraries(ransac_node
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries( ransac_node
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
