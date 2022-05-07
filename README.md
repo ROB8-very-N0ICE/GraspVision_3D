@@ -23,7 +23,7 @@ mkdir yolact/weights
 cd yolact/weights
 ```
 Download the models into the folder weights.
-Add ´´´#!/usr/bin/env python3´´´ to the first line of yolact python scripts.
+Add `#!/usr/bin/env python3` to the first line of yolact python scripts.
 
 
 ## Usage
