@@ -139,13 +139,37 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 
 ////////////////////////////////Here we subscribe to the depth data
 void depth_handler(const sensor_msgs::ImageConstPtr &msg){
+  int div = 1000;
+  int stride = 4;
+  float factor = 1;
+  ROS_INFO("----------------------------------------------------------------");
+
   try {
+    /*
       cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
       //cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC3);
       cv::Mat depth = cv_ptr->image;
-      int height = depth.rows;
-      int width = depth.cols;
+      //generate point cloud
+      pcl::PointCloud<pcl::PointXYZ> cloud;
+      cloud.width = depth.cols;
+      cloud.height = depth.rows;
+
+      float fx = 1.0;  //_intrinsics(0, 0);
+      float fy = 1.0;  //_intrinsics(1, 1);
+      float cx = 1.0;  //_intrinsics(0, 2);
+      float cy = 1.0;  //_intrinsics(1, 2);
+      for (int i = 0; i < depth.rows; i += stride){
+        for (int j = 0; j < depth.cols; j += stride){
+            float Z = depth.at<uint16_t>(i, j) / factor;
+            pcl::PointT p;
+            p.x = (i - cx) * Z / fx / div;
+            p.y = (j - cy) * Z / fy / div;
+            p.z = Z / div;
+            pointcloud->points.push_back(p);
+        }
+      }
       printf ("Cloud: width = %d, height = %d\n", width, height);
+      */
       }
   catch (cv_bridge::Exception &e){
       ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());

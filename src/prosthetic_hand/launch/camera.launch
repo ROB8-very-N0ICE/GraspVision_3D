@@ -30,10 +30,10 @@ This initialize the camera
     <arg name="color_height"        default="480"/>
     <arg name="enable_color"        default="true"/>
 
-    <arg name="fisheye_fps"         default="30"/>
-    <arg name="depth_fps"           default="30"/>
-    <arg name="infra_fps"           default="30"/>
-    <arg name="color_fps"           default="30"/>
+    <arg name="fisheye_fps"         default="5"/>
+    <arg name="depth_fps"           default="5"/>
+    <arg name="infra_fps"           default="5"/>
+    <arg name="color_fps"           default="5"/>
     <arg name="gyro_fps"            default="400"/>
     <arg name="accel_fps"           default="250"/>
     <arg name="enable_gyro"         default="true"/>
@@ -91,7 +91,7 @@ This initialize the camera
 
   <node pkg="yolact_ros" type="yolact_ros" name="yolact_ros">
     <param name="model_path" value="$(find yolact_ros)/scripts/yolact/weights/yolact_base_54_800000.pth" />
-    <param name="image_topic" value="/camera/color/image_raw" /> ="/usb_cam/image_raw"/>
+    <param name="image_topic" value="/camera/color/image_raw" />
     <param name="use_compressed_image" value="True" />
     <param name="publish_visualization" value="False" />
     <param name="publish_detecitons" value="True" />
@@ -103,15 +103,12 @@ This initialize the camera
 run our nodes
 -->
 
-  <node pkg="prosthetic_hand" type="state_machine.py" name="state_machine"/>
   <node pkg="prosthetic_hand" type="camera_node" name="camera_node" />
   <node pkg="prosthetic_hand" type="camera_node" name="ransac_node"  output="screen"/>
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find prosthetic_hand)/rviz/config_file.rviz" />
 
-
-
-
   <!--
+    <node pkg="prosthetic_hand" type="state_machine.py" name="state_machine"/>
   <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
     <param name="video_device" value="/dev/video0" />
     <param name="image_width" value="640" />

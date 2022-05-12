@@ -118,6 +118,7 @@ sensor_msgs::ImagePtr handle_unknown_object(const yolact_ros_msgs::Detection &de
 }
 
 void detectionsCallback(const yolact_ros_msgs::Detections &detec) {
+    //ROS_INFO("Detection!");
     for (int i = 0; i < 5; i++) {  // only 5 detections per message for some reason
         std::string class_name = detec.detections[i].class_name;
         float score = detec.detections[i].score;  // char64_t its float 64, it may cahnge in a diff machine must controll it later
@@ -138,6 +139,7 @@ int main(int argc, char **argv) {
     //ros::Rate r(5); // 5 hz
     ros::NodeHandle nh;
     cv::startWindowThread();
+    ROS_INFO("Camera node starts!-----------------------------------------");
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber subD = it.subscribe("camera/aligned_depth_to_color/image_raw", 1, pointCloudCallback);
     //people_pub = it.advertise("people_depth", 1);
