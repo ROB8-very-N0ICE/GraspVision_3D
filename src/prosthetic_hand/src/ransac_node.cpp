@@ -142,18 +142,20 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
   int div = 1000;
   int stride = 4;
   float factor = 1;
-  ROS_INFO("----------------------------------------------------------------");
-
+  ROS_INFO("depth_handler------------------------------------------");
+/*
   try {
-    /*
+
+
       cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
       //cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC3);
       cv::Mat depth = cv_ptr->image;
       //generate point cloud
+
+
       pcl::PointCloud<pcl::PointXYZ> cloud;
       cloud.width = depth.cols;
       cloud.height = depth.rows;
-
       float fx = 1.0;  //_intrinsics(0, 0);
       float fy = 1.0;  //_intrinsics(1, 1);
       float cx = 1.0;  //_intrinsics(0, 2);
@@ -161,19 +163,34 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
       for (int i = 0; i < depth.rows; i += stride){
         for (int j = 0; j < depth.cols; j += stride){
             float Z = depth.at<uint16_t>(i, j) / factor;
-            pcl::PointT p;
+            cloud.points[i, j].x =  (i - cx) * Z / fx / div;
+            cloud.points[i, j].y =  (j - cy) * Z / fy / div;;
+            cloud.points[i, j].z =   Z / div;
+            pcl::PointXYZ p;
             p.x = (i - cx) * Z / fx / div;
             p.y = (j - cy) * Z / fy / div;
             p.z = Z / div;
-            pointcloud->points.push_back(p);
+            cloud->points.push_back(p);
+
         }
       }
-      printf ("Cloud: width = %d, height = %d\n", width, height);
-      */
+      pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+      viewer->setBackgroundColor (0, 0, 0);
+      viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
+      viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
+      viewer->addCoordinateSystem (1.0);
+      viewer->initCameraParameters ();
+      while (!viewer->wasStopped ()){
+        viewer->spinOnce (100);
+        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
       }
+
+
+
+  }
   catch (cv_bridge::Exception &e){
       ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
-  }
+  }*/
 }
 /////////////////////////////////////////////////////////////
 
@@ -829,6 +846,7 @@ int main(int argc, char** argv){
   //unique_ptr<MyListener> listener;
   ros::init(argc, argv, "ransac_node");
   ros::NodeHandle nh;
+  ROS_INFO("Ransac node started------------------------------------------");
   image_transport::ImageTransport it(nh);
   image_transport::Subscriber sub = it.subscribe("unknown_depth", 1, depth_handler);
   ros::spin();
