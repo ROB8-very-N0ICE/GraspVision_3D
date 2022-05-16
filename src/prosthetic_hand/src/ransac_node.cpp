@@ -139,7 +139,7 @@ double* boxDimentions(int amountOfPlanes, const pcl::ModelCoefficients& plane0, 
 pcl::PointCloud<pcl::PointXYZ> cloud;
 ////////////////////////////////Here we subscribe to the depth data
 void depth_handler(const sensor_msgs::ImageConstPtr &msg){
-  int div = 1000;
+  int div = 1;
   int stride = 4;
   float factor = 1;
   ROS_INFO("depth_handler------------------------------------------");
@@ -161,16 +161,13 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
       float cy = 1.0;  //_intrinsics(1, 2);
       for (int i = 0; i < depth.rows; i += stride){
         for (int j = 0; j < depth.cols; j += stride){
-            float Z = depth.at<uint16_t>(i, j) / factor;
-            cloud.points[i, j].x =  (i - cx) * Z / fx / div;
-            cloud.points[i, j].y =  (j - cy) * Z / fy / div;;
-            cloud.points[i, j].z =   Z / div;
+            float Z = depth.at<uint16_t>(i, j) / 1;
+            if(Z){
             pcl::PointXYZ p;
             p.x = (i - cx) * Z / fx / div;
             p.y = (j - cy) * Z / fy / div;
             p.z = Z / div;
-            cloud.points.push_back(p);
-
+            cloud.points.push_back(p);}
         }
       }
       /*pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
