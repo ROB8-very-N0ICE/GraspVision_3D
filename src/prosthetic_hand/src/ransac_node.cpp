@@ -133,10 +133,10 @@ double* boxDimentions(int amountOfPlanes, const pcl::ModelCoefficients& plane0, 
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 //  pcl::PointCloud<PointXYZ>::Ptr cloud(new pcl::PointCloud<PointXYZ>);
 
-
+pcl::PointCloud<pcl::PointXYZ> cloud;
 ////////////////////////////////Here we subscribe to the depth data
 void depth_handler(const sensor_msgs::ImageConstPtr &msg){
   int div = 1000;
@@ -169,11 +169,11 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
             p.x = (i - cx) * Z / fx / div;
             p.y = (j - cy) * Z / fy / div;
             p.z = Z / div;
-            cloud->points.push_back(p);
+            cloud.points.push_back(p);
 
         }
       }
-      pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+      /*pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
       viewer->setBackgroundColor (0, 0, 0);
       viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
       viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
@@ -183,7 +183,7 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
         viewer->spinOnce (100);
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
       }
-
+*/
 
 
   }
@@ -855,4 +855,3 @@ int main(int argc, char** argv){
 
   ros::spin();
 }
-
