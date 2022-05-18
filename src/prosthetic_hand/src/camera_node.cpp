@@ -77,7 +77,7 @@ sensor_msgs::ImagePtr handle_unknown_object(const yolact_ros_msgs::Detection &de
     //mask_img = cv::Mat::ones(height, width, CV_8UC1) * 255;
     cv::Mat clean_depth = depth;
 
-    float upper_threshold = 300;
+    float upper_threshold = 400; // in millimeters
     float lower_threshold = 200;
 
     std::vector <uint32_t> box = {
