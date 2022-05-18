@@ -151,15 +151,10 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
   float factor = 1;
   ROS_INFO("depth_handler------------------------------------------");
 
-  try {
-
-
       cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
       //cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC3);
       cv::Mat depth = cv_ptr->image;
       //generate point cloud
-
-
       cloud.width = depth.cols;
       cloud.height = depth.rows;
       float fx = 1.0;  //_intrinsics(0, 0);
@@ -175,7 +170,6 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
             p.y = (j - cy) * Z / fy / div;
             p.z = Z / div;
             cloud.points.push_back(p);
-
         }
       }
       /*pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
@@ -189,14 +183,8 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
       }
 */
-
-
-  }
-  catch (cv_bridge::Exception &e){
-      ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
-  }
 }
-*/
+}
 
 
 ///////////////////////////////////////////////////////////////////
@@ -839,213 +827,7 @@ for (int myShape = 0; myShape <=2;){
       }
   }
 
-  void onNewData(const pcl::PointXYZ *data)  //override   //this function is where we read the data, chage the data and get the points
-  {
-
-          pcl::console::TicToc fullcycle;
-          fullcycle.tic();
-          // case variables
-          int cylinder_case = 0;
-          int sphere_case = 1;
-          int box_case = 2;
-
-          // use threads to call this fuction for the different shaps void MyListener::callThreafFunc(const royale::DepthData * data, int myShape)
-          std::thread cylinderThread(&MyListener::callThreafFunc, this, data, cylinder_case);
-          std::thread sphereThread(&MyListener::callThreafFunc, this, data, sphere_case);
-          std::thread boxThread(&MyListener::callThreafFunc, this, data, box_case);
-
-
-
-          //wait un til the threads are stopped
-          cylinderThread.join();
-          sphereThread.join();
-          boxThread.join();
-
-
-          //make ratio array = ratios
-          double shape_ratio[3];
-          shape_ratio[0] = cylinderRatio;
-          shape_ratio[1] = sphereRatio;
-          shape_ratio[2] = boxRatio;
-          int arraySize = sizeof(shape_ratio) / sizeof(shape_ratio[0]);
-          int bestRatio_id;
-
-          //call bestGrasp
-          bestRatio_id = bestGraspRatio(shape_ratio, arraySize);
-
-          //restuckture variables for graspIdentifier
-          double obj_radius[3];
-          obj_radius[0] = cylinder_diameter;
-          obj_radius[1] = sphere_daimeter;
-          obj_radius[2] = box_radius;
-
-          double obj_hight[3];
-          obj_hight[0] = cylinder_hight;
-          obj_hight[1] = sphere_hight;
-          obj_hight[2] = box_hight;
-
-
-          //call graspIdentifier(double size);
-          graspIdentifier(obj_radius[shape_id], obj_hight[shape_id], shape_id);
-          fullcycle.toc();
-          std::cout << "|-------->>  full cycle time: " << fullcycle.toc() << " ms <<--------|" << std::endl;
-
-      }
-
-      //Finds the best ratio, by comparring the different shap ratios
-          int bestGraspRatio(double shape_ratio[], int arraySize) {
-              std::cout << "______Best Grasp______" << std::endl;
-              double max = shape_ratio[0];
-
-              for (int i = 0; i < arraySize - 1; i++) {
-                  if (shape_ratio[i + 1] > max) {
-                      shape_id = i + 1;
-                      max = shape_ratio[i + 1];
-                      std::cout << "i: " << shape_id << ", value: " << max << std::endl;
-                  }
-              }
-              std::cout << "best shape is shape number: " << shape_id << ", with a value of:" << max << " % \n";
-
-              return shape_id;
-          }
-
-      //grasp identifier
-        double graspIdentifier(double objDiameter, double objHight, int shape_id) {
-            double ObjSize;
-            double MinSize = 0;
-            double maxObjSize = 10;
-            // objDiameter = objDiameter * 100 * 2;
-            std::cout << objDiameter << std::endl;
-
-
-            if (shape_id == 0) {
-                      if (objDiameter > 3) {							//cylinder > radius 10mm:
-                          graspTypeCase = 1;
-                          std::cout << "\n" << "\n" << "cylinder with a diameter bigger 3cm, with a size of: " << objDiameter << std::endl;
-                          std::cout << "________ CYLINDER: Selected grasp type: Leteral Power Grip ________" << std::endl;
-
-                      }
-                      else {									    //cylinder <= radius 10mm:
-                          graspTypeCase = 2;
-                          std::cout << "\n" << "cylinder with a diameter smaller 3cm, with a size of: " << objDiameter << std::endl;
-                          std::cout << "________ CYLINDER: Selected grasp type: Lateral Pinch ________" << std::endl;
-                      }
-                  }
-
-                  else if (shape_id == 1) {
-                      ObjSize = objDiameter * 100 * 2;
-                      if (ObjSize > 4.5) {							//ball  > diameter 15mm:
-                          graspTypeCase = 3;
-                          std::cout << "\n" << "\n" << "ball with a diameter bigger 4.5cm, with a size of: " << ObjSize << std::endl;
-                          std::cout << "________ SPHERE: Selected grasp type: Opposition Power Grip ________" << std::endl;
-                      }
-                      else {									    //ball  <= diameter 15mm:
-                          graspTypeCase = 4;
-                          std::cout << "\n" << "\n" << "ball with a diameter smaller 4.5cm, with a size of: " << ObjSize << std::endl;
-                          std::cout << "________ SPHERE: Selected grasp type: Tripod Pinch ________" << std::endl;
-                      }
-                  }
-
-                  else if (shape_id == 2) {
-                      /*
-                      if ((objDiameter > maxObjSize) || (objDiameter = 0)) {
-                          std::cout << "Radius/width of the object is bigger then: " << maxObjSize << ", with a size of: " << objDiameter << std::endl;
-                          if ((objHight > maxObjSize) || (objDiameter = 0)) {
-                              std::cout << "Hight of the object is bigger then: " << maxObjSize << ", with a size of: " << objHight << std::endl;
-                              std::cout << "Error: object is to big. Both the radius and the hight of the object is bigger then: " << maxObjSize << " cm." << std::endl;
-                              return 0;
-                          }
-                          else {
-                              ObjSize = objHight;
-                              std::cout << "Radius/width is used to select the grasptype." << std::endl;
-                          }
-                      }
-                      else {
-                          ObjSize = objDiameter;
-                          std::cout << "Radius/width is used to select the grasptype." << std::endl;
-                      }
-                      */
-                      if (objDiameter > 4) {							//box  > diameter 20mm:
-                          graspTypeCase = 5;
-                          std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
-                          std::cout << "________ BOX: Selected grasp type: Opposition Power Grip ________" << std::endl;
-                      }
-                      else {									    //box <= diameter 20mm:
-                          graspTypeCase = 6;
-                          std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
-                          std::cout << "________ BOX: Selected grasp type: Leteral Power Grip ________" << std::endl;
-                      }
-                  }
-
-                  else {                                          //error
-                      std::cout << "________ Selected grasp type: palm grasp - Object is to big for one hand diameter" << std::endl;
-                  }
-                  std::cout << std::endl;                                                     // "The selected grasp type is number: " << graspTypeCase <<
-                  return graspTypeCase;
-              }
-
-
-
-              ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-pcl::visualization::PCLVisualizer::Ptr simpleVis(pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud)
-  {
-                  // --------------------------------------------
-                  // -----Open 3D viewer and add point cloud-----
-                  // --------------------------------------------
-                  pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
-                  viewer->setBackgroundColor(0, 0, 0);
-                  viewer->addPointCloud<pcl::PointXYZ>(cloud, "sample cloud");
-                  viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
-                  //viewer->addCoordinateSystem (1.0, "global");
-                  viewer->initCameraParameters();
-                  return (viewer);
-              }
-
-private:
-
-  int vp = 0; // Default viewport
-  float bckgr_gray_level = 1.0;  // Black:=0.0
-  float txt_gray_lvl = 1.0 - bckgr_gray_level;
-  std::array<float, 6> filter_lims = { -0.050, 0.050, -0.050, 0.050, 0.000, 0.300 }; // picoflexx depth z-axis (Min ? m)
-  float filt_leaf_size = 0.005;
-
-
-  pcl::visualization::PCLVisualizer::Ptr initViewer()
-  {
-      pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
-      viewer->createViewPort(0.0, 0.0, 1.0, 1.0, vp);
-      viewer->setCameraPosition(0.0, 0.0, -0.5, 0.0, -1.0, 0.0, vp);
-      viewer->setSize(800, 600);
-      viewer->setBackgroundColor(bckgr_gray_level, bckgr_gray_level, bckgr_gray_level, vp);
-      viewer->addCoordinateSystem(0.25); // Global reference frame (on-camera)
-
-      return viewer;
-  }
-
-/*
-  pcl::PointCloud<pcl::PointXYZ>::Ptr MyListener::points_to_pcl(const pcl::PointXYZ* data, uint8_t depthConfidence)
-  {
-      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-
-      cloud->is_dense = false;
-      for (size_t i = 0; i < data->points.size(); ++i) {
-          if (data->points.at(i).depthConfidence >= depthConfidence) {
-              cloud->push_back(pcl::PointXYZ(data->points.at(i).x, data->points.at(i).y, data->points.at(i).z));
-          }
-      }
-      return cloud;
-
-
-}
-*/
-
-
-//return (shape_id);
-
-    };
-
-
-////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv){
   //unique_ptr<MyListener> listener;
@@ -1054,10 +836,5 @@ int main(int argc, char** argv){
   ROS_INFO("Ransac node started------------------------------------------");
   image_transport::ImageTransport it(nh);
   image_transport::Subscriber sub = it.subscribe("unknown_depth", 1, depth_handler);
-
-
-
-
-
   ros::spin();
 }
