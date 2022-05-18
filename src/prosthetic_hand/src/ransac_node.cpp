@@ -329,16 +329,23 @@ image_transport::Subscriber sub = it.subscribe("unknown_depth", 1, depth_handler
 
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int main(int argc, char** argv){
+  //unique_ptr<MyListener> listener;
+  ros::init(argc, argv, "ransac_node");
+  ros::NodeHandle nh;
+  ROS_INFO("Ransac node started------------------------------------------");
+  image_transport::ImageTransport it(nh);
+  image_transport::Subscriber sub = it.subscribe("unknown_depth", 1, depth_handler);
 
-for (int myShape = 0; myShape <=2;){
+  for (int myShape = 0; myShape <=2;){
     std::stringstream msg_general0;
     msg_general0 << "_______________ " << myShape << " -  loop starting _______________" << std::endl;
     std::cout << msg_general0.str();
 
-//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 
-
+    pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
 
         //Datasets
     //    pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);           //create the cloud_filtered
@@ -752,89 +759,233 @@ for (int myShape = 0; myShape <=2;){
                       msg_planeCentroid[plane_counter] << myShape << "-" << plane_counter << " | CENTROID x: " << centroid[0] << " | CENTROID y: " << centroid[1] << " | CENTROID z: " << centroid[2] << std::endl;
                       std::cout << msg_planeCentroid[plane_counter].str();
 
-        //float test = centroid[0];
-        plane_centerPoint_x[plane_counter] = centroid[0];
-        plane_centerPoint_y[plane_counter] = centroid[1];
-        plane_centerPoint_z[plane_counter] = centroid[2];
+                      //float test = centroid[0];
+                      plane_centerPoint_x[plane_counter] = centroid[0];
+                      plane_centerPoint_y[plane_counter] = centroid[1];
+                      plane_centerPoint_z[plane_counter] = centroid[2];
 
 
-        // Save plane_1 inliers
-        pcl::ExtractIndices<pcl::PointXYZ> extract_planes;
-        extract_planes.setInputCloud(cloud_filtered);
-        extract_planes.setIndices(inliers_array[plane_counter]);
-        extract_planes.setNegative(true);
-        extract_planes.filter(*cloud_filtered);
+                      // Save plane_1 inliers
+                      pcl::ExtractIndices<pcl::PointXYZ> extract_planes;
+                      extract_planes.setInputCloud(cloud_filtered);
+                      extract_planes.setIndices(inliers_array[plane_counter]);
+                      extract_planes.setNegative(true);
+                      extract_planes.filter(*cloud_filtered);
 
-        //std::cerr << "Extracted negative points: " << cloud_filtered->points.size() << std::endl;
-        //std::cerr << "inliers_plane.size for the negative plane: " << inliers_array[plane_counter]->indices.size() << std::endl;
-        msg_plane7[plane_counter] << myShape << "; Extracted negative points: " << cloud_filtered->points.size() << " || inliers_plane.size for the negative plane: " << inliers_array[plane_counter]->indices.size() << std::endl;
-        std::cout << msg_plane7[plane_counter].str();
+                      //std::cerr << "Extracted negative points: " << cloud_filtered->points.size() << std::endl;
+                      //std::cerr << "inliers_plane.size for the negative plane: " << inliers_array[plane_counter]->indices.size() << std::endl;
+                      msg_plane7[plane_counter] << myShape << "; Extracted negative points: " << cloud_filtered->points.size() << " || inliers_plane.size for the negative plane: " << inliers_array[plane_counter]->indices.size() << std::endl;
+                      std::cout << msg_plane7[plane_counter].str();
 
-        // Remove the planar inliers from normals
-        pcl::ExtractIndices<pcl::Normal> extract_normals_box;
-        extract_normals_box.setInputCloud(cloud_normals);
-        extract_normals_box.setIndices(inliers_array[plane_counter]);
-        extract_normals_box.setNegative(true);
-        extract_normals_box.filter(*cloud_normals);
+                      // Remove the planar inliers from normals
+                      pcl::ExtractIndices<pcl::Normal> extract_normals_box;
+                      extract_normals_box.setInputCloud(cloud_normals);
+                      extract_normals_box.setIndices(inliers_array[plane_counter]);
+                      extract_normals_box.setNegative(true);
+                      extract_normals_box.filter(*cloud_normals);
 
-        ++plane_counter;
+                      ++plane_counter;
+                  }
+                  //cloud_fitted = plane_array[0];                                                  // to check the enpty statment
+                  boxRatio = (double)ratio_planes[0] + (double)ratio_planes[1] + (double)ratio_planes[2];
+                  //std::cout << "Box ration: "<< boxRatio << std::endl;
+                  msg_plane8 << myShape << "; -----> Box ration: " << boxRatio << std::endl;
+                  std::cout << msg_plane8.str();
+
+                  //cloud_fitted = plane_array[plane_counter];
+                        break;
+                    }
+                    std::stringstream msg_general6;
+                    msg_general6 << myShape << "; extracting of the object finish in " << time.toc() << " ms" << std::endl;
+                    std::cout << msg_general6.str();
+
+
+                        pcl::ModelCoefficients::Ptr corrected_coefs_cylinder(new pcl::ModelCoefficients);
+
+                        std::stringstream msg_cylinder6;
+                        std::stringstream msg_sphere6;
+                        std::stringstream msg_plane10;
+                        int cmRatio = 100;
+                    //////////////////////////////////////////////////////////
+                    //Switch cases to obtain the radius of the different shapes
+                    ///////////////////////////////////////////////////////////
+                        switch (myShape) {
+                        case Shape::SHAPE_CYLINDER:
+                            correctCylShape(*corrected_coefs_cylinder, *coefficients_cylinder, *cloud_fitted);
+                            cylinder_diameter = (coefficients_cylinder->values[6] * cmRatio * 2);
+                            cylinder_hight = cylinder_hight / 10;                             //check out the correct cylinder shap function
+                            msg_cylinder6 << myShape << "; Cylinder; radius: " << cylinder_diameter << " cm, hight: " << cylinder_hight << " cm" << std::endl;
+                            std::cout << msg_cylinder6.str();
+                            break;
+                        case Shape::SHAPE_SPHERE:
+                            sphere_daimeter = coefficients_sphere->values[3];
+                            sphere_hight = sphere_daimeter;
+                            msg_sphere6 << myShape << "; sphere; radius: " << sphere_daimeter << " cm,  hight: " << sphere_hight << " cm" << std::endl;
+                            std::cout << msg_sphere6.str();
+                            break;
+                        case Shape::SHAPE_PLANE:
+                            boxDimentions(plane_counter, *plane_coe_array[0], *plane_coe_array[1], *plane_coe_array[2]);
+                            box_radius;
+                            box_hight;
+
+                            msg_plane10 << myShape << "; box; radius: " << hexahedron_dimensions[0][0] << " cm,  hight: " << hexahedron_dimensions[0][1] << " cm" << std::endl;
+                            std::cout << msg_plane10.str();
+                            break;
+                        }
+
+
+myShape++;
+
+}
+
+pcl::console::TicToc fullcycle;
+fullcycle.tic();
+// case variables
+int cylinder_case = 0;
+int sphere_case = 1;
+int box_case = 2;
+
+//make ratio array = ratios
+double shape_ratio[3];
+shape_ratio[0] = cylinderRatio;
+shape_ratio[1] = sphereRatio;
+shape_ratio[2] = boxRatio;
+int arraySize = sizeof(shape_ratio) / sizeof(shape_ratio[0]);
+int bestRatio_id;
+
+//call bestGrasp
+bestRatio_id = bestGraspRatio(shape_ratio, arraySize);
+
+//restuckture variables for graspIdentifier
+double obj_radius[3];
+obj_radius[0] = cylinder_diameter;
+obj_radius[1] = sphere_daimeter;
+obj_radius[2] = box_radius;
+
+double obj_hight[3];
+obj_hight[0] = cylinder_hight;
+obj_hight[1] = sphere_hight;
+obj_hight[2] = box_hight;
+
+
+//call graspIdentifier(double size);
+graspIdentifier(obj_radius[shape_id], obj_hight[shape_id], shape_id, hexahedron_dimensions[0][1]);
+fullcycle.toc();
+std::cout << "|-------->>  full cycle time: " << fullcycle.toc() << " ms <<--------|" << std::endl;
+
+
+//____________________________________________________________________________________________________________________________________________________
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Finds the best ratio, by comparring the different shap ratios
+
+    std::cout << "______Best Grasp______" << std::endl;
+    double max = shape_ratio[0];
+
+    for (int i = 0; i < arraySize - 1; i++) {
+        if (shape_ratio[i + 1] > max) {
+            shape_id = i + 1;
+            max = shape_ratio[i + 1];
+            std::cout << "i: " << shape_id << ", value: " << max << std::endl;
+        }
     }
-    //cloud_fitted = plane_array[0];                                                  // to check the enpty statment
-    boxRatio = (double)ratio_planes[0] + (double)ratio_planes[1] + (double)ratio_planes[2];
-    //std::cout << "Box ration: "<< boxRatio << std::endl;
-    msg_plane8 << myShape << "; -----> Box ration: " << boxRatio << std::endl;
-    std::cout << msg_plane8.str();
+    std::cout << "best shape is shape number: " << shape_id << ", with a value of:" << max << " % \n";
 
-    //cloud_fitted = plane_array[plane_counter];
-    break;
 
-          /////////////
 
-      }
-      std::stringstream msg_general6;
-      msg_general6 << myShape << "; extracting of the object finisch in " << time.toc() << " ms" << std::endl;
-      std::cout << msg_general6.str();
+  //  return shape_id;
 
-      pcl::ModelCoefficients::Ptr corrected_coefs_cylinder(new pcl::ModelCoefficients);
 
-      std::stringstream msg_cylinder6;
-      std::stringstream msg_sphere6;
-      std::stringstream msg_plane10;
-      int cmRatio = 100;
 
-      switch (myShape) {
-      case Shape::SHAPE_CYLINDER:
-          correctCylShape(*corrected_coefs_cylinder, *coefficients_cylinder, *cloud_fitted);
-          cylinder_diameter = (coefficients_cylinder->values[6] * cmRatio * 2);
-          cylinder_hight = cylinder_hight / 10;                             //check out the correct cylinder shap function
-          msg_cylinder6 << myShape << "; Cylinder; radius: " << cylinder_diameter << " cm, hight: " << cylinder_hight << " cm" << std::endl;
-          std::cout << msg_cylinder6.str();
-          break;
-      case Shape::SHAPE_SPHERE:
-          sphere_daimeter = coefficients_sphere->values[3];
-          sphere_hight = sphere_daimeter;
-          msg_sphere6 << myShape << "; sphere; radius: " << sphere_daimeter << " cm,  hight: " << sphere_hight << " cm" << std::endl;
-          std::cout << msg_sphere6.str();
-          break;
-      case Shape::SHAPE_PLANE:
-          boxDimentions(plane_counter, *plane_coe_array[0], *plane_coe_array[1], *plane_coe_array[2]);
-          box_radius;
-          box_hight;
 
-          msg_plane10 << myShape << "; box; radius: " << box_radius << " cm,  hight: " << box_hight << " cm" << std::endl;
-          std::cout << msg_plane10.str();
-          break;
-      }
-  }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //grasp identifier
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        double ObjSize;
+        double MinSize = 0;
+        double maxObjSize = 10;
+         objDiameter = objDiameter * 100 * 2;
+        std::cout << objDiameter << std::endl;
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int main(int argc, char** argv){
-  //unique_ptr<MyListener> listener;
-  ros::init(argc, argv, "ransac_node");
-  ros::NodeHandle nh;
-  ROS_INFO("Ransac node started------------------------------------------");
-  image_transport::ImageTransport it(nh);
-  image_transport::Subscriber sub = it.subscribe("unknown_depth", 1, depth_handler);
+        if (shape_id == 0) {
+            if (objDiameter > 5) {							//cylinder > radius 10mm:
+                graspTypeCase = 1;
+                std::cout << "\n" << "\n" << "cylinder with a diameter bigger 3cm, with a size of: " << objDiameter << std::endl;
+                std::cout << "________ CYLINDER: Selected grasp type: Medium wrap ________" << std::endl;
+
+            }
+            else {									    //cylinder <= radius 10mm:
+                graspTypeCase = 2;
+                std::cout << "\n" << "cylinder with a diameter smaller 3cm, with a size of: " << objDiameter << std::endl;
+                std::cout << "________ CYLINDER: Selected grasp type: Lateral tripod________" << std::endl;
+            }
+        }
+
+        else if (shape_id == 1) {
+            ObjSize = objDiameter * 100 * 2;
+            if (ObjSize > 55) {							//ball  > diameter 15mm:
+                graspTypeCase = 3;
+                std::cout << "\n" << "\n" << "ball with a diameter bigger 4.5cm, with a size of: " << ObjSize << std::endl;
+                std::cout << "________ SPHERE: Selected grasp type: Power sphere ________" << std::endl;
+            }
+            else  {									    //ball  <= diameter 15mm:
+                graspTypeCase = 4;
+                std::cout << "\n" << "\n" << "ball with a diameter smaller 4.5cm, with a size of: " << ObjSize << std::endl;
+                std::cout << "________ SPHERE: Selected grasp type: Tripod ________" << std::endl;
+            }
+        }
+
+        else if (shape_id == 2) {
+            /*
+            if ((objDiameter > maxObjSize) || (objDiameter = 0)) {
+                std::cout << "Radius/width of the object is bigger then: " << maxObjSize << ", with a size of: " << objDiameter << std::endl;
+                if ((objHight > maxObjSize) || (objDiameter = 0)) {
+                    std::cout << "Hight of the object is bigger then: " << maxObjSize << ", with a size of: " << objHight << std::endl;
+                    std::cout << "Error: object is to big. Both the radius and the hight of the object is bigger then: " << maxObjSize << " cm." << std::endl;
+                    return 0;
+                }
+                else {
+                    ObjSize = objHight;
+                    std::cout << "Radius/width is used to select the grasptype." << std::endl;
+                }
+            }
+            else {
+                ObjSize = objDiameter;
+                std::cout << "Radius/width is used to select the grasptype." << std::endl;
+            }
+            */
+            if (objDiameter > 4) {							//box  > diameter 20mm:
+                graspTypeCase = 5;
+                std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
+                std::cout << "________ BOX: Selected grasp type: Medium wrap ________" << std::endl;
+            }
+            else {									    //box <= diameter 20mm:
+                graspTypeCase = 6;
+                std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
+                std::cout << "________ BOX: Selected grasp type: Lateral ________" << std::endl;
+            }
+        }
+
+        else {                                          //error
+            std::cout << "________ Selected grasp type: palm grasp - Object is to big for one hand diameter" << std::endl;
+        }
+        std::cout << std::endl;                                                     // "The selected grasp type is number: " << graspTypeCase <<
+    //    return graspTypeCase;
+
+
+
+
+
+        std::cout << "Don't touch my truck" << std::endl;
+
+        std::cout << shape_id << std::endl;
+
+
+    //New change
+//   ros::Subscriber cloud = nh.subscribe<PointCloud>("pub_point_cloud_", 1, callback);
+//callThreafFunc(const pcl::PointXYZ *data, int myShape);
+
+
+
   ros::spin();
 }
