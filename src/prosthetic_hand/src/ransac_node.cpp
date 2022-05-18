@@ -79,8 +79,20 @@ double box_radius;
 double cylinder_hight;
 double sphere_hight;
 double box_hight;
-
 double hexahedron_dimensions[3][3];
+int myShape;
+pcl::PointCloud<pcl::PointXYZ> cloud;
+float dotProduct(pcl::PointXYZ, pcl::PointXYZ);
+float normPointT(pcl::PointXYZ);
+std::array<float, 6> getPointCloudBoundaries(const pcl::PointCloud<PointT>&);
+int graspIdentifier(double size);
+int bestGraspRatio(double shape_ratio[], int arraySize);
+
+//void correctCylShape(pcl::ModelCoefficients&, const pcl::ModelCoefficients&, const pcl::PointCloud<PointT>&);
+//void correctSphereShape(pcl::ModelCoefficients& sphere, const pcl::ModelCoefficients& coefficients, const pcl::PointCloud<PointT>& cloud);
+//std::array<float, 2> getPointCloudExtremesSphere(const pcl::PointCloud<PointT>& cloud, pcl::PointXYZ center);
+//double* boxDimentions(int amountOfPlanes, const pcl::ModelCoefficients& plane0, const pcl::ModelCoefficients& plane1, const pcl::ModelCoefficients& plane2);
+
 
 //////////////////////////////////////////////////////////////////
 
@@ -125,164 +137,7 @@ void keyboardEventOccurred(const pcl::visualization::KeyboardEvent& event, void*
         next_iteration = true;
 }
 
-
-float dotProduct(pcl::PointXYZ, pcl::PointXYZ);
-float normPointT(pcl::PointXYZ);
-std::array<float, 6> getPointCloudBoundaries(const pcl::PointCloud<PointT>&);
-
-int graspIdentifier(double size);
-int bestGraspRatio(double shape_ratio[], int arraySize);
-
-void correctCylShape(pcl::ModelCoefficients&, const pcl::ModelCoefficients&, const pcl::PointCloud<PointT>&);
-void correctSphereShape(pcl::ModelCoefficients& sphere, const pcl::ModelCoefficients& coefficients, const pcl::PointCloud<PointT>& cloud);
-std::array<float, 2> getPointCloudExtremesSphere(const pcl::PointCloud<PointT>& cloud, pcl::PointXYZ center);
-double* boxDimentions(int amountOfPlanes, const pcl::ModelCoefficients& plane0, const pcl::ModelCoefficients& plane1, const pcl::ModelCoefficients& plane2);
-
 ////////////////////////////////////////////////////////////////////////////////////
-
-//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
-//  pcl::PointCloud<PointXYZ>::Ptr cloud(new pcl::PointCloud<PointXYZ>);
-//pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
-pcl::PointCloud<pcl::PointXYZ> cloud;
-////////////////////////////////Here we subscribe to the depth data
-void depth_handler(const sensor_msgs::ImageConstPtr &msg){
-  int div = 1;
-  int stride = 4;
-  float factor = 1;
-  ROS_INFO("depth_handler------------------------------------------");
-
-      cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
-      //cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC3);
-      cv::Mat depth = cv_ptr->image;
-      //generate point cloud
-      cloud.width = depth.cols;
-      cloud.height = depth.rows;
-      float fx = 1.0;  //_intrinsics(0, 0);
-      float fy = 1.0;  //_intrinsics(1, 1);
-      float cx = 1.0;  //_intrinsics(0, 2);
-      float cy = 1.0;  //_intrinsics(1, 2);
-      for (int i = 0; i < depth.rows; i += stride){
-        for (int j = 0; j < depth.cols; j += stride){
-            float Z = depth.at<uint16_t>(i, j) / 1;
-            if(Z){
-            pcl::PointXYZ p;
-            p.x = (i - cx) * Z / fx / div;
-            p.y = (j - cy) * Z / fy / div;
-            p.z = Z / div;
-            cloud.points.push_back(p);
-        }
-      }
-      /*pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-      viewer->setBackgroundColor (0, 0, 0);
-      viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
-      viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
-      viewer->addCoordinateSystem (1.0);
-      viewer->initCameraParameters ();
-      while (!viewer->wasStopped ()){
-        viewer->spinOnce (100);
-        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
-      }
-*/
-}
-}
-
-
-///////////////////////////////////////////////////////////////////
-      //Finds the best ratio, by comparring the different shape ratios
-  ///////////////////////////////////////////////////////////////////
-          int bestGraspRatio(double shape_ratio[], int arraySize) {
-              std::cout << "______Best Grasp______" << std::endl;
-              double max = shape_ratio[0];
-
-              for (int i = 0; i < arraySize - 1; i++) {
-                  if (shape_ratio[i + 1] > max) {
-                      shape_id = i + 1;
-                      max = shape_ratio[i + 1];
-                      std::cout << "i: " << shape_id << ", value: " << max << std::endl;
-                  }
-              }
-              std::cout << "best shape is shape number: " << shape_id << ", with a value of:" << max << " % \n";
-
-              return shape_id;
-          }
-
-          ///////////////////////////////////////////////
-          //Decision tree to determine the best grasp type
-          //////////////////////////////////////////////
-                  double graspIdentifier(double objDiameter, double objHight, int shape_id, double hexahedron_dimensions) {
-                      double ObjSize;
-                      double MinSize = 0;
-                      double maxObjSize = 10;
-                      std::cout << objDiameter << std::endl;
-
-
-                      if (shape_id == 0) {
-                                if (objDiameter > 3) {							//cylinder > radius 10mm:
-                                    graspTypeCase = 1;
-                                    std::cout << "\n" << "\n" << "cylinder with a diameter bigger 3cm, with a size of: " << objDiameter << std::endl;
-                                    std::cout << "________ CYLINDER: Selected grasp type: Leteral Power Grip ________" << std::endl;
-
-                                }
-                                else {									    //cylinder <= radius 10mm:
-                                    graspTypeCase = 2;
-                                    std::cout << "\n" << "cylinder with a diameter smaller 3cm, with a size of: " << objDiameter << std::endl;
-                                    std::cout << "________ CYLINDER: Selected grasp type: Lateral Pinch ________" << std::endl;
-                                }
-                            }
-
-                            else if (shape_id == 1) {
-                                ObjSize = objDiameter * 100 * 2;
-                                if (ObjSize > 4.5) {							//ball  > diameter 15mm:
-                                    graspTypeCase = 3;
-                                    std::cout << "\n" << "\n" << "ball with a diameter bigger 4.5cm, with a size of: " << ObjSize << std::endl;
-                                    std::cout << "________ SPHERE: Selected grasp type: Opposition Power Grip ________" << std::endl;
-                                }
-                                else {									    //ball  <= diameter 15mm:
-                                    graspTypeCase = 4;
-                                    std::cout << "\n" << "\n" << "ball with a diameter smaller 4.5cm, with a size of: " << ObjSize << std::endl;
-                                    std::cout << "________ SPHERE: Selected grasp type: Tripod Pinch ________" << std::endl;
-                                }
-                            }
-
-                            else if (shape_id == 2) {
-                                /*
-                                if ((objDiameter > maxObjSize) || (objDiameter = 0)) {
-                                    std::cout << "Radius/width of the object is bigger then: " << maxObjSize << ", with a size of: " << objDiameter << std::endl;
-                                    if ((objHight > maxObjSize) || (objDiameter = 0)) {
-                                        std::cout << "Hight of the object is bigger then: " << maxObjSize << ", with a size of: " << objHight << std::endl;
-                                        std::cout << "Error: object is to big. Both the radius and the hight of the object is bigger then: " << maxObjSize << " cm." << std::endl;
-                                        return 0;
-                                    }
-                                    else {
-                                        ObjSize = objHight;
-                                        std::cout << "Radius/width is used to select the grasptype." << std::endl;
-                                    }
-                                }
-                                else {
-                                    ObjSize = objDiameter;
-                                    std::cout << "Radius/width is used to select the grasptype." << std::endl;
-                                }
-                                */
-                                if (objDiameter > 4) {							//box  > diameter 20mm:
-                                    graspTypeCase = 5;
-                                    std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
-                                    std::cout << "________ BOX: Selected grasp type: Opposition Power Grip ________" << std::endl;
-                                }
-                                else if (objDiameter < 4) {									    //box <= diameter 20mm:
-                                    graspTypeCase = 6;
-                                    std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
-                                    std::cout << "________ BOX: Selected grasp type: Leteral Power Grip ________" << std::endl;
-                                }
-                            }
-
-                            else {                                          //error
-                                std::cout << "________ Selected grasp type: palm grasp - Object is to big for one hand diameter" << std::endl;
-                            }
-                            std::cout << std::endl;                                                     // "The selected grasp type is number: " << graspTypeCase <<
-                            return graspTypeCase;
-                        }
-int myShape;
-
 
 void ransac_fitting() {
   /* code */
@@ -337,10 +192,6 @@ void ransac_fitting() {
             pcl::PointIndices::Ptr inliers_plane_p2(new pcl::PointIndices), inliers_plane2(new pcl::PointIndices);
             pcl::ModelCoefficients::Ptr coefficients_plane_p3(new pcl::ModelCoefficients), coefficients_planes3(new pcl::ModelCoefficients);
             pcl::PointIndices::Ptr inliers_plane_p3(new pcl::PointIndices), inliers_plane3(new pcl::PointIndices);
-
-
-
-
 
             // Estimate point normals
            time.tic();
@@ -711,7 +562,7 @@ void ransac_fitting() {
                     ///////////////////////////////////////////////////////////
                        switch (myShape) {
                         case Shape::SHAPE_CYLINDER:
-                          //  correctCylShape(*corrected_coefs_cylinder, *coefficients_cylinder, *cloud_fitted); //Problem
+  //  correctCylShape(*corrected_coefs_cylinder, *coefficients_cylinder, *cloud_fitted); //Problem
                             cylinder_diameter = (coefficients_cylinder->values[6] * cmRatio * 2);
                             cylinder_hight = cylinder_hight / 10;                             //check out the correct cylinder shap function
                             msg_cylinder6 << myShape << "; Cylinder; radius: " << cylinder_diameter << " cm, hight: " << cylinder_hight << " cm" << std::endl;
@@ -724,7 +575,7 @@ void ransac_fitting() {
                             std::cout << msg_sphere6.str();
                             break;
                         case Shape::SHAPE_PLANE:
-                  //          boxDimentions(plane_counter, *plane_coe_array[0], *plane_coe_array[1], *plane_coe_array[2]); //Problem
+    //          boxDimentions(plane_counter, *plane_coe_array[0], *plane_coe_array[1], *plane_coe_array[2]); //Problem
                             box_radius;
                             box_hight;
 
@@ -740,155 +591,149 @@ myShape++;
 
 }
 
-void graspIdentifier(/* arguments */) {
+////////////////////////////////Here we subscribe to the depth data
+void depth_handler(const sensor_msgs::ImageConstPtr &msg){
+  int div = 1;
+  int stride = 4;
+  float factor = 1;
+  ROS_INFO("depth_handler------------------------------------------");
 
-  //Here's the function
-
-
-
-  pcl::console::TicToc fullcycle;
-  fullcycle.tic();
-  // case variables
-  int cylinder_case = 0;
-  int sphere_case = 1;
-  int box_case = 2;
-
-  //make ratio array = ratios
-  double shape_ratio[3];
-  shape_ratio[0] = cylinderRatio;
-  shape_ratio[1] = sphereRatio;
-  shape_ratio[2] = boxRatio;
-  int arraySize = sizeof(shape_ratio) / sizeof(shape_ratio[0]);
-  int bestRatio_id;
-
-  //call bestGrasp
-  bestRatio_id = bestGraspRatio(shape_ratio, arraySize);
-
-  //restuckture variables for graspIdentifier
-  double obj_radius[3];
-  obj_radius[0] = cylinder_diameter;
-  obj_radius[1] = sphere_daimeter;
-  obj_radius[2] = box_radius;
-
-  double obj_hight[3];
-  obj_hight[0] = cylinder_hight;
-  obj_hight[1] = sphere_hight;
-  obj_hight[2] = box_hight;
-
-
-  //call graspIdentifier(double size);
-  graspIdentifier(obj_radius[shape_id], obj_hight[shape_id], shape_id, hexahedron_dimensions[0][1]);
-  fullcycle.toc();
-  std::cout << "|-------->>  full cycle time: " << fullcycle.toc() << " ms <<--------|" << std::endl;
-
-
-  //____________________________________________________________________________________________________________________________________________________
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //Finds the best ratio, by comparring the different shap ratios
-
-      std::cout << "______Best Grasp______" << std::endl;
-      double max = shape_ratio[0];
-
-      for (int i = 0; i < arraySize - 1; i++) {
-          if (shape_ratio[i + 1] > max) {
-              shape_id = i + 1;
-              max = shape_ratio[i + 1];
-              std::cout << "i: " << shape_id << ", value: " << max << std::endl;
-          }
+      cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+      //cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC3);
+      cv::Mat depth = cv_ptr->image;
+      //generate point cloud
+      cloud.width = depth.cols;
+      cloud.height = depth.rows;
+      float fx = 1.0;  //_intrinsics(0, 0);
+      float fy = 1.0;  //_intrinsics(1, 1);
+      float cx = 1.0;  //_intrinsics(0, 2);
+      float cy = 1.0;  //_intrinsics(1, 2);
+      for (int i = 0; i < depth.rows; i += stride){
+        for (int j = 0; j < depth.cols; j += stride){
+            float Z = depth.at<uint16_t>(i, j) / 1;
+            if(Z){
+            pcl::PointXYZ p;
+            p.x = (i - cx) * Z / fx / div;
+            p.y = (j - cy) * Z / fy / div;
+            p.z = Z / div;
+            cloud.points.push_back(p);
+        }
       }
-      std::cout << "best shape is shape number: " << shape_id << ", with a value of:" << max << " % \n";
-
-
-
-    //  return shape_id;
-
-
-
-
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      //grasp identifier
-
-          double ObjSize;
-          double MinSize = 0;
-          double maxObjSize = 10;
-           objDiameter = objDiameter * 100 * 2;
-          std::cout << objDiameter << std::endl;
-          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-          if (shape_id == 0) {
-              if (objDiameter > 5) {							//cylinder > radius 10mm:
-                  graspTypeCase = 1;
-                  std::cout << "\n" << "\n" << "cylinder with a diameter bigger 3cm, with a size of: " << objDiameter << std::endl;
-                  std::cout << "________ CYLINDER: Selected grasp type: Medium wrap ________" << std::endl;
-
-              }
-              else {									    //cylinder <= radius 10mm:
-                  graspTypeCase = 2;
-                  std::cout << "\n" << "cylinder with a diameter smaller 3cm, with a size of: " << objDiameter << std::endl;
-                  std::cout << "________ CYLINDER: Selected grasp type: Lateral tripod________" << std::endl;
-              }
-          }
-
-          else if (shape_id == 1) {
-              ObjSize = objDiameter * 100 * 2;
-              if (ObjSize > 55) {							//ball  > diameter 15mm:
-                  graspTypeCase = 3;
-                  std::cout << "\n" << "\n" << "ball with a diameter bigger 4.5cm, with a size of: " << ObjSize << std::endl;
-                  std::cout << "________ SPHERE: Selected grasp type: Power sphere ________" << std::endl;
-              }
-              else  {									    //ball  <= diameter 15mm:
-                  graspTypeCase = 4;
-                  std::cout << "\n" << "\n" << "ball with a diameter smaller 4.5cm, with a size of: " << ObjSize << std::endl;
-                  std::cout << "________ SPHERE: Selected grasp type: Tripod ________" << std::endl;
-              }
-          }
-
-          else if (shape_id == 2) {
-              /*
-              if ((objDiameter > maxObjSize) || (objDiameter = 0)) {
-                  std::cout << "Radius/width of the object is bigger then: " << maxObjSize << ", with a size of: " << objDiameter << std::endl;
-                  if ((objHight > maxObjSize) || (objDiameter = 0)) {
-                      std::cout << "Hight of the object is bigger then: " << maxObjSize << ", with a size of: " << objHight << std::endl;
-                      std::cout << "Error: object is to big. Both the radius and the hight of the object is bigger then: " << maxObjSize << " cm." << std::endl;
-                      return 0;
-                  }
-                  else {
-                      ObjSize = objHight;
-                      std::cout << "Radius/width is used to select the grasptype." << std::endl;
-                  }
-              }
-              else {
-                  ObjSize = objDiameter;
-                  std::cout << "Radius/width is used to select the grasptype." << std::endl;
-              }
-              */
-
-              if (objDiameter > 4) {							//box  > diameter 20mm:
-                  graspTypeCase = 5;
-                  std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
-                  std::cout << "________ BOX: Selected grasp type: Medium wrap ________" << std::endl;
-              }
-              else {									    //box <= diameter 20mm:
-                  graspTypeCase = 6;
-                  std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
-                  std::cout << "________ BOX: Selected grasp type: Lateral ________" << std::endl;
-              }
-          }
-
-          else {                                          //error
-              std::cout << "________ Selected grasp type: palm grasp - Object is to big for one hand diameter" << std::endl;
-          }
-          std::cout << std::endl;                                                     // "The selected grasp type is number: " << graspTypeCase <<
-      //    return graspTypeCase;
-      std::cout << "Don't touch my truck" << std::endl;
-
-          std::cout << shape_id << std::endl;
-
-
-      //New change
-  //   ros::Subscriber cloud = nh.subscribe<PointCloud>("pub_point_cloud_", 1, callback);
-  //callThreafFunc(const pcl::PointXYZ *data, int myShape);
+      /*pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+      viewer->setBackgroundColor (0, 0, 0);
+      viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
+      viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
+      viewer->addCoordinateSystem (1.0);
+      viewer->initCameraParameters ();
+      while (!viewer->wasStopped ()){
+        viewer->spinOnce (100);
+        boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+      }
+*/
+    }
+    ransac_fitting();
 }
+
+
+///////////////////////////////////////////////////////////////////
+      //Finds the best ratio, by comparring the different shape ratios
+  ///////////////////////////////////////////////////////////////////
+          int bestGraspRatio(double shape_ratio[], int arraySize) {
+              std::cout << "______Best Grasp______" << std::endl;
+              double max = shape_ratio[0];
+
+              for (int i = 0; i < arraySize - 1; i++) {
+                  if (shape_ratio[i + 1] > max) {
+                      shape_id = i + 1;
+                      max = shape_ratio[i + 1];
+                      std::cout << "i: " << shape_id << ", value: " << max << std::endl;
+                  }
+              }
+              std::cout << "best shape is shape number: " << shape_id << ", with a value of:" << max << " % \n";
+
+              return shape_id;
+          }
+
+          ///////////////////////////////////////////////
+          //Decision tree to determine the best grasp type
+          //////////////////////////////////////////////
+                  double graspIdentifier(double objDiameter, double objHight, int shape_id, double hexahedron_dimensions) {
+                      double ObjSize;
+                      double MinSize = 0;
+                      double maxObjSize = 10;
+                      std::cout << objDiameter << std::endl;
+
+
+                      if (shape_id == 0) {
+                                if (objDiameter > 3) {							//cylinder > radius 10mm:
+                                    graspTypeCase = 1;
+                                    std::cout << "\n" << "\n" << "cylinder with a diameter bigger 3cm, with a size of: " << objDiameter << std::endl;
+                                    std::cout << "________ CYLINDER: Selected grasp type: Leteral Power Grip ________" << std::endl;
+
+                                }
+                                else {									    //cylinder <= radius 10mm:
+                                    graspTypeCase = 2;
+                                    std::cout << "\n" << "cylinder with a diameter smaller 3cm, with a size of: " << objDiameter << std::endl;
+                                    std::cout << "________ CYLINDER: Selected grasp type: Lateral Pinch ________" << std::endl;
+                                }
+                            }
+
+                            else if (shape_id == 1) {
+                                ObjSize = objDiameter * 100 * 2;
+                                if (ObjSize > 4.5) {							//ball  > diameter 15mm:
+                                    graspTypeCase = 3;
+                                    std::cout << "\n" << "\n" << "ball with a diameter bigger 4.5cm, with a size of: " << ObjSize << std::endl;
+                                    std::cout << "________ SPHERE: Selected grasp type: Opposition Power Grip ________" << std::endl;
+                                }
+                                else {									    //ball  <= diameter 15mm:
+                                    graspTypeCase = 4;
+                                    std::cout << "\n" << "\n" << "ball with a diameter smaller 4.5cm, with a size of: " << ObjSize << std::endl;
+                                    std::cout << "________ SPHERE: Selected grasp type: Tripod Pinch ________" << std::endl;
+                                }
+                            }
+
+                            else if (shape_id == 2) {
+                                /*
+                                if ((objDiameter > maxObjSize) || (objDiameter = 0)) {
+                                    std::cout << "Radius/width of the object is bigger then: " << maxObjSize << ", with a size of: " << objDiameter << std::endl;
+                                    if ((objHight > maxObjSize) || (objDiameter = 0)) {
+                                        std::cout << "Hight of the object is bigger then: " << maxObjSize << ", with a size of: " << objHight << std::endl;
+                                        std::cout << "Error: object is to big. Both the radius and the hight of the object is bigger then: " << maxObjSize << " cm." << std::endl;
+                                        return 0;
+                                    }
+                                    else {
+                                        ObjSize = objHight;
+                                        std::cout << "Radius/width is used to select the grasptype." << std::endl;
+                                    }
+                                }
+                                else {
+                                    ObjSize = objDiameter;
+                                    std::cout << "Radius/width is used to select the grasptype." << std::endl;
+                                }
+                                */
+                                if (objDiameter > 4) {							//box  > diameter 20mm:
+                                    graspTypeCase = 5;
+                                    std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
+                                    std::cout << "________ BOX: Selected grasp type: Opposition Power Grip ________" << std::endl;
+                                }
+                                else if (objDiameter < 4) {									    //box <= diameter 20mm:
+                                    graspTypeCase = 6;
+                                    std::cout << "\n" << "\n" << "box with a diameter bigger 2cm, with a size of: " << objDiameter << std::endl;
+                                    std::cout << "________ BOX: Selected grasp type: Leteral Power Grip ________" << std::endl;
+                                }
+                            }
+
+                            else {                                          //error
+                                std::cout << "________ Selected grasp type: palm grasp - Object is to big for one hand diameter" << std::endl;
+                            }
+                            std::cout << std::endl;                                                     // "The selected grasp type is number: " << graspTypeCase <<
+                            return graspTypeCase;
+                        }
+
+
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
