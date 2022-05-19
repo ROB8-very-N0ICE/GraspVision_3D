@@ -81,6 +81,7 @@ double sphere_hight;
 double box_hight;
 
 double hexahedron_dimensions[3][3];
+pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pointer( new pcl::PointCloud<pcl::PointXYZ>);
 
 //////////////////////////////////////////////////////////////////
 
@@ -138,13 +139,7 @@ void correctSphereShape(pcl::ModelCoefficients& sphere, const pcl::ModelCoeffici
 std::array<float, 2> getPointCloudExtremesSphere(const pcl::PointCloud<PointT>& cloud, pcl::PointXYZ center);
 double* boxDimentions(int amountOfPlanes, const pcl::ModelCoefficients& plane0, const pcl::ModelCoefficients& plane1, const pcl::ModelCoefficients& plane2);
 
-////////////////////////////////////////////////////////////////////////////////////
-
-//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
-//  pcl::PointCloud<PointXYZ>::Ptr cloud(new pcl::PointCloud<PointXYZ>);
-pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
-//pcl::PointCloud<pcl::PointXYZ> cloud_filtered;
-////////////////////////////////Here we subscribe to the depth data
+//////////////////////////////////////////////////////////////////////////////////// Here we subscribe to the depth data
 void depth_handler(const sensor_msgs::ImageConstPtr &msg){
   int div = 1;
   int stride = 4;
@@ -155,8 +150,10 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
       //cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_8UC3);
       cv::Mat depth = cv_ptr->image;
       //generate point cloud
-      cloud_filtered.width = depth.cols;
-      cloud_filtered.height = depth.rows;
+      cloud_pointer->width = depth.cols;
+      cloud_pointer->height = depth.rows;
+      cloud_pointer->is_dense = false ;
+      cloud_pointer->points.resize (cloud_pointer->width * cloud_pointer->height);
       float fx = 1.0;  //_intrinsics(0, 0);
       float fy = 1.0;  //_intrinsics(1, 1);
       float cx = 1.0;  //_intrinsics(0, 2);
@@ -165,11 +162,9 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
         for (int j = 0; j < depth.cols; j += stride){
             float Z = depth.at<uint16_t>(i, j) / 1;
             if(Z){
-            pcl::PointXYZ p;
-            p.x = (i - cx) * Z / fx / div;
-            p.y = (j - cy) * Z / fy / div;
-            p.z = Z / div;
-            cloud_filtered.points.push_back(p);
+            cloud_pointer->points[i].x = (i - cx) * Z / fx / div;
+            cloud_pointer->points[i].y = (j - cy) * Z / fy / div;
+            cloud_pointer->points[i].z = Z / div;
         }
       }
       /*pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
@@ -299,12 +294,7 @@ int main(int argc, char** argv){
     msg_general0 << "_______________ " << myShape << " -  loop starting _______________" << std::endl;
     std::cout << msg_general0.str();
 
-
-    pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>);
-
-        //Datasets
-    //    pcl::PointCloud<PointT>::Ptr cloud_filtered(new pcl::PointCloud<PointT>);           //create the cloud_filtered
-        pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);  //create a object could_narmals
+    pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);  //create a object could_narmals
 
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -347,45 +337,10 @@ int main(int argc, char** argv){
             pcl::PointIndices::Ptr inliers_plane_p3(new pcl::PointIndices), inliers_plane3(new pcl::PointIndices);
 
 
-/*
-            // Build a passthrough filter to remove unwanted points
-            time.tic();
-            pass.setInputCloud(cloud);
-            pass.setFilterFieldName("x");
-            pass.setFilterLimits(filter_lims[0], filter_lims[1]);
-            pass.filter(*cloud_filtered);
-            //
-            pass.setInputCloud(cloud_filtered);
-            pass.setFilterFieldName("y");
-            pass.setFilterLimits(filter_lims[2], filter_lims[3]);
-            pass.filter(*cloud_filtered);
-            //
-            pass.setInputCloud(cloud_filtered);
-            pass.setFilterFieldName("z");
-            pass.setFilterLimits(filter_lims[4], filter_lims[5]);
-            pass.filter(*cloud_filtered);
-
-            std::stringstream msg_general2;
-            msg_general2 << myShape << "; PointCloud after filtering: " << cloud_filtered->points.size() << " data points (" << time.toc() << ")." << std::endl;
-            std::cout << msg_general2.str();
-
-
-            // Downsampling the filtered point cloud
-            pcl::VoxelGrid<pcl::PointXYZ> dsfilt;
-            dsfilt.setInputCloud(cloud_filtered);
-            dsfilt.setLeafSize(filt_leaf_size, filt_leaf_size, filt_leaf_size);
-            dsfilt.filter(*cloud_filtered);
-
-            std::stringstream msg_general3;
-            msg_general3 << myShape << "; PointCloud after downsampling: " << cloud_filtered->width * cloud_filtered->height << " data points (" << time.toc() << ")." << std::endl;
-            std::cout << msg_general3.str();
-*/
-
-
             // Estimate point normals
            time.tic();
             ne.setSearchMethod(tree);
-            ne.setInputCloud(cloud_filtered);
+            ne.setInputCloud(cloud_pointer);
             ne.setKSearch(50);
             ne.compute(*cloud_normals);
             std::stringstream msg_general4;
@@ -408,7 +363,7 @@ int main(int argc, char** argv){
                 seg_cylinder.setMaxIterations(10000);
                 seg_cylinder.setDistanceThreshold(0.0012);
                 seg_cylinder.setRadiusLimits(0.005, 0.150);
-                seg_cylinder.setInputCloud(cloud_filtered);
+                seg_cylinder.setInputCloud(cloud_pointer);
                 seg_cylinder.setInputNormals(cloud_normals);
                 msg_cylinder1 << myShape << "; SetModelType to: CYLINDER" << std::endl;
                 std::cout << msg_cylinder1.str();
@@ -422,7 +377,7 @@ int main(int argc, char** argv){
                 seg_sphere.setMaxIterations(10000);
                 seg_sphere.setDistanceThreshold(0.005);
                 seg_sphere.setRadiusLimits(0.005, 0.15);
-                seg_sphere.setInputCloud(cloud_filtered);
+                seg_sphere.setInputCloud(cloud_pointer);
                 seg_sphere.setInputNormals(cloud_normals);
                 msg_sphere1 << myShape << "; SetModelType to: SPHERE" << std::endl;
                 std::cout << msg_sphere1.str();
@@ -436,7 +391,7 @@ int main(int argc, char** argv){
                 seg_plane.setMaxIterations(10000);
                 seg_plane.setDistanceThreshold(0.001);
                 seg_plane.setRadiusLimits(0.005, 0.150);
-                //seg_plane.setInputCloud(cloud_filtered);
+                //seg_plane.setInputCloud(cloud_pointer);
                 //seg_plane.setInputNormals(cloud_normals);
                 msg_plane1 << myShape << "; SetModelType to: PLANE" << std::endl;
                 std::cout << msg_plane1.str();
@@ -530,17 +485,17 @@ int main(int argc, char** argv){
                         std::cout << msg_cylinder2.str();
 
                         // Save the cylinder inliers
-                        extract_cylinder.setInputCloud(cloud_filtered);
+                        extract_cylinder.setInputCloud(cloud_pointer);
                         extract_cylinder.setIndices(inliers_cylinder);
                         extract_cylinder.setNegative(false);
                         extract_cylinder.filter(*cloud_fitted);
 
                         //point cloud ratio                                                                  nice
-                        cylinderRatio = (double)cloud_fitted->points.size() / (double)cloud_filtered->points.size() * 100;
-                        //std::cerr << "cylinderPoints_size: " << cloud_fitted->points.size() << "  ;  filteredPoints_size: " << cloud_filtered->points.size() << std::endl;
+                        cylinderRatio = (double)cloud_fitted->points.size() / (double)cloud_pointer->points.size() * 100;
+                        //std::cerr << "cylinderPoints_size: " << cloud_fitted->points.size() << "  ;  filteredPoints_size: " << cloud_pointer->points.size() << std::endl;
                         //std::cerr << " - Cylinder ratio: " << cylinderRatio << " CylinderRadius: " << coefficients_cylinder->values[6]*1000 << " mm" << std::endl;
 
-                        msg_cylinder3 << myShape << "; cylinderPoints_size: " << cloud_fitted->points.size() << "  ;  filteredPoints_size: " << cloud_filtered->points.size() << std::endl;
+                        msg_cylinder3 << myShape << "; cylinderPoints_size: " << cloud_fitted->points.size() << "  ;  filteredPoints_size: " << cloud_pointer->points.size() << std::endl;
                         std::cout << msg_cylinder3.str();
                         msg_cylinder4 << myShape << "; -----> Cylinder ratio: " << cylinderRatio << " CylinderRadius: " << coefficients_cylinder->values[6] * 1000 << " mm" << std::endl;
                         std::cout << msg_cylinder4.str();
@@ -555,16 +510,16 @@ int main(int argc, char** argv){
                         //std::cerr << "Sphere coefficients: " << *coefficients_sphere << std::endl;
 
                         // Save the sphere inliers
-                        extract_sphere.setInputCloud(cloud_filtered);
+                        extract_sphere.setInputCloud(cloud_pointer);
                         extract_sphere.setIndices(inliers_sphere);
                         extract_sphere.setNegative(false);
                         extract_sphere.filter(*cloud_fitted);
 
                         //couldpoint ratio                                                                  nice
-                        sphereRatio = (double)cloud_fitted->points.size() / (double)cloud_filtered->points.size() * 100;
-                        //std::cerr << "spherePoints_size: " << cloud_fitted->points.size() << "  ;  filteredPoints_size: " << cloud_filtered->points.size() << std::endl;
+                        sphereRatio = (double)cloud_fitted->points.size() / (double)cloud_pointer->points.size() * 100;
+                        //std::cerr << "spherePoints_size: " << cloud_fitted->points.size() << "  ;  filteredPoints_size: " << cloud_pointer->points.size() << std::endl;
                         //std::cerr << "Sphere ratio: " << sphereRatio << "  |  SphereRadius: " << coefficients_sphere->values[3]*1000 << " mm" <<std::endl;
-                        msg_sphere3 << myShape << "; -----> spherePoints_size: " << cloud_fitted->points.size() << "  ;  filteredPoints_size: " << cloud_filtered->points.size() << std::endl;
+                        msg_sphere3 << myShape << "; -----> spherePoints_size: " << cloud_fitted->points.size() << "  ;  filteredPoints_size: " << cloud_pointer->points.size() << std::endl;
                         std::cout << msg_sphere3.str();
                         msg_sphere4 << myShape << "; Sphere ratio: " << sphereRatio << "  |  SphereRadius: " << coefficients_sphere->values[3] * 1000 << " mm" << std::endl;
                         std::cout << msg_sphere4.str();
@@ -578,25 +533,25 @@ int main(int argc, char** argv){
                   inliers_array[1] = inliers_plane2;
                   inliers_array[2] = inliers_plane3;
 
-                  int nPoints = cloud_filtered->points.size();
+                  int nPoints = cloud_pointer->points.size();
 
                   double ratio_planes[3];
                   ratio_planes[0] = 0;
                   ratio_planes[1] = 0;
                   ratio_planes[2] = 0;
 
-                  while (cloud_filtered->points.size() > nPoints * 0.3 && plane_counter < 3)
+                  while (cloud_pointer->points.size() > nPoints * 0.3 && plane_counter < 3)
                   {
                       //std::cout << "___________________while loop starts______________nr. " << (plane_counter+1) << " _____________" << std::endl;
                       msg_plane2[plane_counter] << myShape << "; ______ Plane2Box while loop|| nr. " << (plane_counter) << " ______" << std::endl;
                       std::cout << msg_plane2[plane_counter].str();
 
-                      //std::cout << "Original amount of points: " << cloud_filtered->points.size() << std::endl;
-                      msg_plane3[plane_counter] << myShape << "; Original amount of points: " << cloud_filtered->points.size() << std::endl;
+                      //std::cout << "Original amount of points: " << cloud_pointer->points.size() << std::endl;
+                      msg_plane3[plane_counter] << myShape << "; Original amount of points: " << cloud_pointer->points.size() << std::endl;
                       std::cout << msg_plane3[plane_counter].str();
 
 
-                      seg_plane.setInputCloud(cloud_filtered);
+                      seg_plane.setInputCloud(cloud_pointer);
                       seg_plane.setInputNormals(cloud_normals);
                       seg_plane.segment(*inliers_array[plane_counter], *plane_coe_array[plane_counter]);
                       //std::cerr << "Before extracting, inliers_plane.size: " << inliers_array[plane_counter]->indices.size() << std::endl;
@@ -607,8 +562,8 @@ int main(int argc, char** argv){
                       std::cout << msg_plane4[plane_counter].str();
 
                       if (inliers_array[plane_counter]->indices.size() == 0) {                                                                                             //prev inliers
-                          //std::cout << "Error: cound not estimate a planer model. ||  Amount of Points: " << cloud_filtered->points.size() << std::endl;
-                          msg_plane5[plane_counter] << myShape << "; Error: cound not estimate a planer model. ||  Amount of Points: " << cloud_filtered->points.size() << std::endl;
+                          //std::cout << "Error: cound not estimate a planer model. ||  Amount of Points: " << cloud_pointer->points.size() << std::endl;
+                          msg_plane5[plane_counter] << myShape << "; Error: cound not estimate a planer model. ||  Amount of Points: " << cloud_pointer->points.size() << std::endl;
                           std::cout << msg_plane5[plane_counter].str();
                           break;
                       }
@@ -621,9 +576,9 @@ int main(int argc, char** argv){
 
                       Eigen::Vector4f xyz_centroid;
 
-                      compute3DCentroid (*cloud_filtered, xyz_centroid);
+                      compute3DCentroid (*cloud_pointer, xyz_centroid);
 
-                      computeCovarianceMatrix (*cloud_filtered, xyz_centroid, covariance_matrix);
+                      computeCovarianceMatrix (*cloud_pointer, xyz_centroid, covariance_matrix);
 
 
                       Eigen::EigenSolver<Eigen::MatrixXf> eigensolver;
@@ -662,54 +617,23 @@ int main(int argc, char** argv){
 
                       // Save plane_1 inliers
                       pcl::ExtractIndices<pcl::PointXYZ> extract_plane;
-                      extract_plane.setInputCloud(cloud_filtered);
+                      extract_plane.setInputCloud(cloud_pointer);
                       extract_plane.setIndices(inliers_array[plane_counter]);
                       extract_plane.setNegative(false);
                       extract_plane.filter(*plane_array[plane_counter]);
 
                       //couldpoint ratio                                                                  nice
                       ratio_planes[plane_counter] = (double)plane_array[plane_counter]->points.size() / (double)nPoints * 100;
-                      //std::cerr << "Extracted Points: " << plane_array[plane_counter]->points.size() << " | Total points: " << (double)cloud_filtered->points.size() << " Plane ratio: " << ratio_planes[plane_counter] << std::endl;
-                      msg_plane6[plane_counter] << myShape << "; ---> Extracted Points: " << plane_array[plane_counter]->points.size() << " | Total points: " << (double)cloud_filtered->points.size() << " Plane ratio: " << ratio_planes[plane_counter] << std::endl;
+                      //std::cerr << "Extracted Points: " << plane_array[plane_counter]->points.size() << " | Total points: " << (double)cloud_pointer->points.size() << " Plane ratio: " << ratio_planes[plane_counter] << std::endl;
+                      msg_plane6[plane_counter] << myShape << "; ---> Extracted Points: " << plane_array[plane_counter]->points.size() << " | Total points: " << (double)cloud_pointer->points.size() << " Plane ratio: " << ratio_planes[plane_counter] << std::endl;
                       std::cout << msg_plane6[plane_counter].str();
-
-
-/*
-                            std::cout << "Loaded "
-                                        << cloud_filtered->width * cloud_filtered->height
-                                        << " data points from test_pcd.pcd with the following fields: "
-                                        << std::endl;
-
-                            for (const auto& point: *cloud_filtered)
-                                std::cout << "    " << point.x
-                                          << " "    << point.y
-                                          << " "    << point.z << std::endl;
-*/
-/*
-                                          pcl::PointXYZ minPt, maxPt;
-                                            pcl::getMinMax3D (*cloud_filtered, minPt, maxPt);
-                                            std::cout << "Max x: " << maxPt.x << std::endl;
-                                            std::cout << "Max y: " << maxPt.y << std::endl;
-                                            std::cout << "Max z: " << maxPt.z << std::endl;
-                                            std::cout << "Min x: " << minPt.x << std::endl;
-                                            std::cout << "Min y: " << minPt.y << std::endl;
-                                            std::cout << "Min z: " << minPt.z << std::endl;
-
-       plane_max[plane_counter][1] = maxPt.x;
-       plane_max[plane_counter][2] = maxPt.y;
-       plane_max[plane_counter][3] = maxPt.z;
-
-       plane_min[plane_counter][1] = minPt.x;
-       plane_min[plane_counter][2] = minPt.y;
-       plane_min[plane_counter][3] = minPt.z;
-*/
 
                       //get
                       std::ostringstream oss;
                       oss << "merged_fitpc2.pcd" + plane_counter;
                       //reader.read(oss, *plane_array[plane_counter]);
                       Eigen::Vector4f centroid;
-                      pcl::compute3DCentroid(*cloud_filtered, centroid);
+                      pcl::compute3DCentroid(*cloud_pointer, centroid);
                       //cout<<centroid[0] << endl << centroid[1] << endl << centroid[2] << endl;
                       msg_planeCentroid[plane_counter] << myShape << "-" << plane_counter << " | CENTROID x: " << centroid[0] << " | CENTROID y: " << centroid[1] << " | CENTROID z: " << centroid[2] << std::endl;
                       std::cout << msg_planeCentroid[plane_counter].str();
@@ -722,14 +646,12 @@ int main(int argc, char** argv){
 
                       // Save plane_1 inliers
                       pcl::ExtractIndices<pcl::PointXYZ> extract_planes;
-                      extract_planes.setInputCloud(cloud_filtered);
+                      extract_planes.setInputCloud(cloud_pointer);
                       extract_planes.setIndices(inliers_array[plane_counter]);
                       extract_planes.setNegative(true);
-                      extract_planes.filter(*cloud_filtered);
+                      extract_planes.filter(*cloud_pointer);
 
-                      //std::cerr << "Extracted negative points: " << cloud_filtered->points.size() << std::endl;
-                      //std::cerr << "inliers_plane.size for the negative plane: " << inliers_array[plane_counter]->indices.size() << std::endl;
-                      msg_plane7[plane_counter] << myShape << "; Extracted negative points: " << cloud_filtered->points.size() << " || inliers_plane.size for the negative plane: " << inliers_array[plane_counter]->indices.size() << std::endl;
+                      msg_plane7[plane_counter] << myShape << "; Extracted negative points: " << cloud_pointer->points.size() << " || inliers_plane.size for the negative plane: " << inliers_array[plane_counter]->indices.size() << std::endl;
                       std::cout << msg_plane7[plane_counter].str();
 
                       // Remove the planar inliers from normals
@@ -766,7 +688,6 @@ int main(int argc, char** argv){
                     ///////////////////////////////////////////////////////////
                         switch (myShape) {
                         case Shape::SHAPE_CYLINDER:
-                            correctCylShape(*corrected_coefs_cylinder, *coefficients_cylinder, *cloud_fitted);
                             cylinder_diameter = (coefficients_cylinder->values[6] * cmRatio * 2);
                             cylinder_hight = cylinder_hight / 10;                             //check out the correct cylinder shap function
                             msg_cylinder6 << myShape << "; Cylinder; radius: " << cylinder_diameter << " cm, hight: " << cylinder_hight << " cm" << std::endl;
@@ -779,7 +700,6 @@ int main(int argc, char** argv){
                             std::cout << msg_sphere6.str();
                             break;
                         case Shape::SHAPE_PLANE:
-                            boxDimentions(plane_counter, *plane_coe_array[0], *plane_coe_array[1], *plane_coe_array[2]);
                             box_radius;
                             box_hight;
 
@@ -820,7 +740,7 @@ obj_radius[2] = box_radius;
 
 
 //call graspIdentifier(double size);
-graspIdentifier(obj_radius[shape_id], obj_hight[shape_id], shape_id, hexahedron_dimensions[0][1]);
+//graspIdentifier(obj_radius[shape_id], obj_hight[shape_id], shape_id, hexahedron_dimensions[0][1]);
 fullcycle.toc();
 std::cout << "|-------->>  full cycle time: " << fullcycle.toc() << " ms <<--------|" << std::endl;
 
