@@ -79,6 +79,7 @@ double box_radius;
 double cylinder_hight;
 double sphere_hight;
 double box_hight;
+
 double hexahedron_dimensions[3][3];
 int myShape;
 pcl::PointCloud<pcl::PointXYZ> cloud;
@@ -136,6 +137,19 @@ void keyboardEventOccurred(const pcl::visualization::KeyboardEvent& event, void*
     if (event.getKeySym() == "space" && event.keyDown())
         next_iteration = true;
 }
+
+
+float dotProduct(pcl::PointXYZ, pcl::PointXYZ);
+float normPointT(pcl::PointXYZ);
+std::array<float, 6> getPointCloudBoundaries(const pcl::PointCloud<PointT>&);
+
+int graspIdentifier(double size);
+int bestGraspRatio(double shape_ratio[], int arraySize);
+
+void correctCylShape(pcl::ModelCoefficients&, const pcl::ModelCoefficients&, const pcl::PointCloud<PointT>&);
+void correctSphereShape(pcl::ModelCoefficients& sphere, const pcl::ModelCoefficients& coefficients, const pcl::PointCloud<PointT>& cloud);
+std::array<float, 2> getPointCloudExtremesSphere(const pcl::PointCloud<PointT>& cloud, pcl::PointXYZ center);
+double* boxDimentions(int amountOfPlanes, const pcl::ModelCoefficients& plane0, const pcl::ModelCoefficients& plane1, const pcl::ModelCoefficients& plane2);
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -634,6 +648,10 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
     ransac_fitting();
 }
 
+  double obj_hight[3];
+  obj_hight[0] = cylinder_hight;
+  obj_hight[1] = sphere_hight;
+  obj_hight[2] = box_hight;
 
 ///////////////////////////////////////////////////////////////////
       //Finds the best ratio, by comparring the different shape ratios
@@ -730,6 +748,7 @@ void depth_handler(const sensor_msgs::ImageConstPtr &msg){
                             return graspTypeCase;
                         }
 
+          std::cout << shape_id << std::endl;
 
 
 
