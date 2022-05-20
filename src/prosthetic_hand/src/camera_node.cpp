@@ -8,6 +8,11 @@
 #include <yolact_ros_msgs/Detections.h>
 #include <std_msgs/UInt8.h>
 
+#include <pcl_ros/point_cloud.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_cloud.h>
+#include <pcl/common/common.h>
+
 
 cv::Mat rgb_img;
 int width = 10;    // hardcodding... to make it faster
