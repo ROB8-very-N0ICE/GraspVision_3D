@@ -130,6 +130,7 @@ void detectionsCallback(const yolact_ros_msgs::Detections &detec) {
     //TODO: remove further points
         }
     }
+    
 void state_update(const std_msgs::UInt8 &state){
   //machine_state = state;
 }

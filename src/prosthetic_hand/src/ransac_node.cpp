@@ -214,11 +214,11 @@ void start_here(){
 
     for (int myShape = 0; myShape <=2;){
       std::stringstream msg_general0;
-      msg_general0 << "_______________ " << myShape << " -  loop starting _______________" << std::endl;
+      msg_general0 << "_ One _" << std::endl;
       std::cout << msg_general0.str();
       pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);  //create a object could_narmals
       ///////////////////////////////////////////////////////////////////////////////////////
-
+      msg_general0 << "_ Two _" << std::endl;
           // Transform rs2::pointcloud into pcl::PointCloud<PointT>::Ptr                      rs2?? whaaat
           pcl::console::TicToc time;                                                          //create a variable called time
           pcl::console::TicToc tloop;                                                         //
@@ -226,7 +226,7 @@ void start_here(){
           pcl::console::TicToc Tseg;
           time.tic();
           tloop.tic();
-
+      msg_general0 << "_ Three _" << std::endl;
           // PCL objects
           pcl::PassThrough<PointT> pass(true);
           pcl::NormalEstimation<PointT, pcl::Normal> ne;
@@ -238,7 +238,7 @@ void start_here(){
           pcl::ExtractIndices<PointT> extract_plane;
           pcl::ExtractIndices<pcl::Normal> extract_normals;
           pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
-
+      msg_general0 << "_ Four _" << std::endl;
           ///////////////////////////////////////////////////////////////////
               //Declare the inliers for the different planes and shapes
           /////////////////////////////////////////////////////////////////
@@ -256,7 +256,7 @@ void start_here(){
           pcl::ModelCoefficients::Ptr coefficients_plane_p3(new pcl::ModelCoefficients), coefficients_planes3(new pcl::ModelCoefficients);
           pcl::PointIndices::Ptr inliers_plane_p3(new pcl::PointIndices), inliers_plane3(new pcl::PointIndices);
 
-
+      msg_general0 << "_ Five _" << std::endl;
               // Estimate point normals
              time.tic();
               ne.setSearchMethod(tree);
@@ -266,14 +266,14 @@ void start_here(){
               std::stringstream msg_general4;
               msg_general4 << myShape << "; Estimating point normals (" << time.toc() << ")." << std::endl;
               std::cout << msg_general4.str();
-
+      msg_general0 << "_ Six _" << std::endl;
               Tseg.tic();
               ROS_INFO("12");
 
               std::stringstream msg_cylinder1;
               std::stringstream msg_sphere1;
               std::stringstream msg_plane1;
-
+      msg_general0 << "_ Seven _" << std::endl;
               switch (myShape) {
               case Shape::SHAPE_CYLINDER:
               ROS_INFO("cylinder");
@@ -301,7 +301,7 @@ void start_here(){
                   seg_sphere.setDistanceThreshold(0.005);
                   seg_sphere.setRadiusLimits(0.005, 0.15);
                   seg_sphere.setInputCloud(cloud_pointer);
-                  seg_sphere.setInputNormals(cloud_normals);
+                  //seg_sphere.setInputNormals(cloud_normals);
                   msg_sphere1 << myShape << "; SetModelType to: SPHERE" << std::endl;
                   std::cout << msg_sphere1.str();
                   break;
@@ -475,8 +475,8 @@ void start_here(){
                         std::cout << msg_plane3[plane_counter].str();
 
 
-                        seg_plane.setInputCloud(cloud_pointer);
-                        seg_plane.setInputNormals(cloud_normals);
+                    //    seg_plane.setInputCloud(cloud_pointer);
+                    //    seg_plane.setInputNormals(cloud_normals);
                         seg_plane.segment(*inliers_array[plane_counter], *plane_coe_array[plane_counter]);
                         //std::cerr << "Before extracting, inliers_plane.size: " << inliers_array[plane_counter]->indices.size() << std::endl;
 
@@ -579,11 +579,11 @@ void start_here(){
                         std::cout << msg_plane7[plane_counter].str();
 
                         // Remove the planar inliers from normals
-                        pcl::ExtractIndices<pcl::Normal> extract_normals_box;
-                        extract_normals_box.setInputCloud(cloud_normals);
-                        extract_normals_box.setIndices(inliers_array[plane_counter]);
-                        extract_normals_box.setNegative(true);
-                        extract_normals_box.filter(*cloud_normals);
+                  //      pcl::ExtractIndices<pcl::Normal> extract_normals_box;
+                  //      extract_normals_box.setInputCloud(cloud_normals);
+                  //      extract_normals_box.setIndices(inliers_array[plane_counter]);
+                  //      extract_normals_box.setNegative(true);
+                  //      extract_normals_box.filter(*cloud_normals);
 
                         ++plane_counter;
                     }
