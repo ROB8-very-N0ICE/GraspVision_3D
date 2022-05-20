@@ -114,6 +114,7 @@ sensor_msgs::ImagePtr handle_unknown_object(const yolact_ros_msgs::Detection &de
     }
     //cv::imshow("unknown object", mask_img);
     //feedback_pub.publish(1);  // 1 is the next logical state for the state_machine
+    ROS_INFO(depth2point(clean_depth)); //saves the point cloud to a file
     return cv_bridge::CvImage(std_msgs::Header(), "mono16", clean_depth).toImageMsg();
 }
 
@@ -130,10 +131,41 @@ void detectionsCallback(const yolact_ros_msgs::Detections &detec) {
     //TODO: remove further points
         }
     }
-    
+
 void state_update(const std_msgs::UInt8 &state){
   //machine_state = state;
 }
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr depth2point(){
+  // TODO: import pcl
+  ROS_INFO("depth_handler------------------------------------------");
+  int div = 1;
+  int stride = 4;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pointer( new pcl::PointCloud<pcl::PointXYZ>);
+  cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
+  cloud_pointer->width = width;
+  cloud_pointer->height = height;
+  cloud_pointer->is_dense = false ;
+  cloud_pointer->points.resize (width * height);
+  float fx = 1.0;  //_intrinsics(0, 0);
+  float fy = 1.0;  //_intrinsics(1, 1);
+  float cx = 1.0;  //_intrinsics(0, 2);
+  float cy = 1.0;  //_intrinsics(1, 2);
+  for (int i = 0; i < height; i += stride){
+    for (int j = 0; j < width; j += stride){
+        float Z = depth.at<uint16_t>(i, j) / 1;
+        if(Z){
+        cloud_pointer->points[i].x = (i - cx) * Z / fx / div;
+        cloud_pointer->points[i].y = (j - cy) * Z / fy / div;
+        cloud_pointer->points[i].z = Z / div;
+        }
+    }
+  }
+  //int pcl::FileWriter::write 	save_success(const std::string &"cloud_from_camera.ply", const pcl::PointCloud<PointXYZ> &cloud_pointer)
+  pcl::io::savePCDFileASCII ("cloud_from_camera.pcd", &cloud);
+  return cloud_pointer;
+}
+
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "camera_node");
