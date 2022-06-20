@@ -1,6 +1,8 @@
 # P8_project
 Prosthesis perception of human-robot interaction for amputee social engagement
 
+<img title="Depth map object segmentation" alt="Alt text" src="/camera_tests.gif">
+
 ## Instalation
 Install our system
 ```
