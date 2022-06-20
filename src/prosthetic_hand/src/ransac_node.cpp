@@ -195,8 +195,8 @@ double graspIdentifier(double objDiameter, double objHeight, int shape_id, doubl
 
 void start_here(){
 
+  ROS_INFO("start_here------------------------------------------");
     for (int myShape = 0; myShape <=2;){
-
 
 
 
@@ -227,12 +227,15 @@ void start_here(){
           pcl::ExtractIndices<pcl::Normal> extract_normals;
           pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
 
+
         //Cylinder inliers
           pcl::ModelCoefficients::Ptr coefficients_plane_c(new pcl::ModelCoefficients), coefficients_cylinder(new pcl::ModelCoefficients);
           pcl::PointIndices::Ptr inliers_plane_c(new pcl::PointIndices), inliers_cylinder(new pcl::PointIndices);
+
         //Sphere inliers
           pcl::ModelCoefficients::Ptr coefficients_plane_S(new pcl::ModelCoefficients), coefficients_sphere(new pcl::ModelCoefficients);
           pcl::PointIndices::Ptr inliers_plane_S(new pcl::PointIndices), inliers_sphere(new pcl::PointIndices);
+
         //Plane inliers
           pcl::ModelCoefficients::Ptr coefficients_plane_p(new pcl::ModelCoefficients), coefficients_planes1(new pcl::ModelCoefficients);
           pcl::PointIndices::Ptr inliers_plane_p(new pcl::PointIndices), inliers_plane1(new pcl::PointIndices);
@@ -241,12 +244,16 @@ void start_here(){
           pcl::ModelCoefficients::Ptr coefficients_plane_p3(new pcl::ModelCoefficients), coefficients_planes3(new pcl::ModelCoefficients);
           pcl::PointIndices::Ptr inliers_plane_p3(new pcl::PointIndices), inliers_plane3(new pcl::PointIndices);
 
+
               // Estimate point normals
 
               ne.setSearchMethod(tree);
+              std::cout << sizeof(*cloud_pointer) << '\n';
               ne.setInputCloud(cloud_pointer);
+
               ne.setKSearch(50);
-              ne.compute(*cloud_normals);
+
+              ne.compute(*cloud_normals); /// its here
               std::stringstream msg_general4;
 
               std::stringstream msg_cylinder1;
@@ -530,6 +537,7 @@ void start_here(){
   myShape++;
   }
 
+
     int cylinder_case = 0;
     int sphere_case = 1;
     int box_case = 2;
@@ -639,7 +647,7 @@ void debug_point_cloud(){
   start_here();
 }
 */
-/*void depth_handler(const sensor_msgs::ImageConstPtr &msg){
+void depth_handler(const sensor_msgs::ImageConstPtr &msg){
   int div = 1;
   int stride = 4;
   float factor = 1;
@@ -666,6 +674,7 @@ void debug_point_cloud(){
             cloud_pointer->points[i].z = Z / div;
         }
       }
+      /*
       pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
       viewer->setBackgroundColor (0, 0, 0);
       viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
@@ -676,25 +685,24 @@ void debug_point_cloud(){
         viewer->spinOnce (100);
         boost::this_thread::sleep (boost::posix_time::microseconds (100000));
       }
+      */
 
 }
 start_here();
 }
-*/
-int main(int argc, char** argv)
-{
+
+int main(int argc, char** argv){
   std::chrono::system_clock::now().time_since_epoch();
   ros::init(argc, argv, "sub_pcl");
   ros::NodeHandle nh;
+  ros::Subscriber subDet = nh.subscribe("/unknown_depth", 1, depth_handler);
   ROS_INFO("Ransac node started------------------------------------------");
-
+/*
 if (pcl::io::loadPCDFile<pcl::PointXYZ> ("H1T1.pcd", *cloud_pointer) == -1)
 {
       PCL_ERROR ("Couldn't read file test_pcd.pcd \n");
       return (-1);
-    }
+    }*/
 
-  start_here();
-
-ros::spin();
+    ros::spin();
 }

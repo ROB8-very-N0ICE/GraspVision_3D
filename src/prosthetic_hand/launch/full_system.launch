@@ -105,8 +105,8 @@ run our nodes
 
   <node pkg="prosthetic_hand" type="camera_node" name="camera_node" />
   <node pkg="prosthetic_hand" type="ransac_node" name="ransac_node"  output="screen"/>
-  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find prosthetic_hand)/rviz/config_file.rviz" />
 
   <!--
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find prosthetic_hand)/rviz/config_file.rviz" />
   -->
 </launch>

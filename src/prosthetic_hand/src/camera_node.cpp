@@ -164,8 +164,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr depth2point(){
   //int pcl::FileWriter::write 	save_success(const std::string &"cloud_from_camera.ply", const pcl::PointCloud<PointXYZ> &cloud_pointer)
   //pcl::io::savePCDFileASCII ("cloud_from_camera.pcd", &cloud);
   return cloud_pointer;
-}
-*/
+}*/
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "camera_node");
